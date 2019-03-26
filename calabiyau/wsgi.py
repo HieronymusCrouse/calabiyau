@@ -29,7 +29,8 @@
 # THE POSSIBILITY OF SUCH DAMAGE.
 
 from luxon.core.handlers.wsgi import Wsgi
-application = Wsgi(__name__, ini='/etc/tachyonic/calabiyau.ini')
+application = Wsgi(__name__,
+                   ini='/etc/tachyonic/calabiyau.ini')
 
 # This the place to start importing luxon packages/modules.
 import calabiyau.app
