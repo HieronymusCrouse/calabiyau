@@ -1,0 +1,50 @@
+server radius {
+	listen {
+		type = ${type}
+		ipaddr = 127.0.0.1
+		port = ${port}
+		limit {
+		      max_connections = 64
+		      lifetime = 0
+		      idle_timeout = 30
+		}
+	}
+
+	authorize {
+		python
+        insert_acct_class
+	}
+
+
+	authenticate {
+		python
+	}
+
+
+	preacct {
+		#update control {
+		#	Replicate-To-Realm := 'PROCERA'
+        #        }
+		acct_unique
+		acct_counters64
+	}
+
+	accounting {
+		python
+		replicate
+	}
+
+
+	session {
+	}
+
+
+	post-auth {
+	}
+
+	pre-proxy {
+	}
+
+	post-proxy {
+	}
+}

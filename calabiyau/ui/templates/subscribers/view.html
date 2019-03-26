@@ -1,0 +1,15 @@
+{% extends "photonic/view.html" %}
+
+{% block content %}
+    <form method='post' enctype="multipart/form-data" disabled>
+        {{ form }}
+    </form>
+{% endblock %}
+
+
+{% block buttons %}
+    <a href="#" data-close-window class="btn btn-default">Back</a>
+    {% if REQ.policy.validate('services:admin') %}
+    <a href="{{ APP }}/services/subscriber/edit/{{id}}" class="btn btn-primary">Edit</a>
+    {% endif %}
+{% endblock %}

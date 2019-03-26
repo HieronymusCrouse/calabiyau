@@ -1,0 +1,19 @@
+{% extends "photonic/view.html" %}
+{% block content %}
+<table class="display" data-endpoint='subscriber' data-url="/v1/subscribers" width="100%">
+    <thead>
+        <tr>
+            <th id='username'>Login</th>
+            <th id='name'>Name</th>
+            <th data-modal data-href="/services/subscriber" width="2rem">
+                <span data-feather="edit"></span>
+            </th>
+        </tr>
+    </thead>
+</table>
+{% endblock %}
+{% block buttons %}
+{% if REQ.policy.validate('services:admin') %}
+<a class="btn btn-primary" href="{{APP}}/services/subscriber/add" data-modal>New</a>
+{% endif %}
+{% endblock %}

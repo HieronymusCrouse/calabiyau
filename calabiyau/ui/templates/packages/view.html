@@ -1,0 +1,21 @@
+{% extends "photonic/view.html" %}
+{% block content %}
+<form method='post' enctype="multipart/form-data" disabled>
+    {{ form }}
+</form>
+<table class="display" data-endpoint='subscriber' data-url="/v1/package/{{id}}/attrs" width="100%">
+    <thead>
+        <tr>
+            <th id='attribute'>Attribute</th>
+            <th id='value'>Value</th>
+            <th id='ctx'>Context</th>
+            <th id='nas_type'>Vendor</th>
+        </tr>
+    </thead>
+</table>
+{% endblock %}
+
+{% block buttons %}
+    <a href="#" data-close-window class="btn btn-default">Back</a>
+    <a href="{{ APP }}/infrastructure/subscriber/package/edit/{{id}}" class="btn btn-primary">Edit</a>
+{% endblock %}

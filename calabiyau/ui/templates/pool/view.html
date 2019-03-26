@@ -1,0 +1,21 @@
+{% extends "photonic/view.html" %}
+{% block content %}
+<form method='post' enctype="multipart/form-data" disabled>
+    {{ form }}
+</form>
+<table class="display" data-endpoint='subscriber' data-url="/v1/pool/{{id}}/ips" width="100%">
+    <thead>
+        <tr>
+            <th id='framedipaddress'>IP</th>
+            <th id='expiry_time'>Expiry</th>
+            <th id='username'>Username</th>
+            <th id='nasipaddress'>NAS</th>
+        </tr>
+    </thead>
+</table>
+{% endblock %}
+
+{% block buttons %}
+    <a href="#" data-close-window class="btn btn-default">Back</a>
+    <a href="{{ APP }}/infrastructure/subscriber/pool/edit/{{id}}" class="btn btn-primary">Edit</a>
+{% endblock %}

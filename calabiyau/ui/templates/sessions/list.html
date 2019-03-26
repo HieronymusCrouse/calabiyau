@@ -1,0 +1,18 @@
+{% extends "photonic/view.html" %}
+{% block content %}
+<table class="display" data-endpoint='subscriber' data-url="/v1/sessions" width="100%">
+    <thead>
+        <tr>
+            <th id='username'>Username</th>
+            <th id='nasipaddress'>NAS</th>
+	    <th id='acctstarttime'>Login@</th>
+            <th id='framedipaddress'>IP</th>
+            <th data-href="/infrastructure/subscriber/disconnect" data-confirm="Disconnect Session?" data-datatable data-closeall width="2rem">
+                <span data-feather="delete"></span>
+            </th>
+        </tr>
+    </thead>
+</table>
+{% endblock %}
+{% block buttons %}
+{% endblock %}

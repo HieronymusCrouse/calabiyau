@@ -1,0 +1,24 @@
+{% extends "photonic/view.html" %}
+{% block content %}
+<form method='post' enctype="multipart/form-data" disabled>
+    {{ form }}
+</form>
+<table class="display" data-endpoint='subscriber' data-url="/v1/virtual/{{id}}/nas" width="100%">
+    <thead>
+        <tr>
+            <th id='name'>Name</th>
+            <th id='server'>Server</th>
+            <th id='nas_type'>Type</th>
+            <th id='secret'>Secret</th>
+            <th data-confirm="Clear NAS Sessions on Radius?" data-href="/infrastructure/subscriber/virtual/clear" data-close width="2rem">
+                <span data-feather="user-x"></span>
+            </th>
+        </tr>
+    </thead>
+</table>
+{% endblock %}
+
+{% block buttons %}
+    <a href="#" data-close-window class="btn btn-default">Back</a>
+    <a href="{{ APP }}/infrastructure/subscriber/virtual/edit/{{id}}" class="btn btn-primary">Edit</a>
+{% endblock %}

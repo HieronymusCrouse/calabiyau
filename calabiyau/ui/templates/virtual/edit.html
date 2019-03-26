@@ -1,0 +1,51 @@
+{% extends "photonic/view.html" %}
+
+{% block content %}
+    <form id="form" method='post' enctype="multipart/form-data">
+        {{ form }}
+    </form>
+<table class="display" data-endpoint='subscriber' data-url="/v1/virtual/{{id}}/nas" width="100%">
+    <thead>
+        <tr>
+            <th id='name'>Name</th>
+            <th id='server'>Server</th>
+            <th id='nas_type'>Type</th>
+            <th id='secret'>Secret</th>
+			<th data-confirm="Clear NAS Sessions on Radius?" data-href="/infrastructure/subscriber/virtual/clear" data-close width="2rem">
+				<span data-feather="user-x"></span>
+			</th>
+			<th data-confirm="Delete NAS Server?" data-href="/infrastructure/subscriber/virtual/rm_nas" data-close width="2rem">
+				<span data-feather="minus-square"></span>
+			</th>
+        </tr>
+    </thead>
+</table>
+ <form autocomplete="off" data-msg="Succesfully added NAS" data-datatable action="{{APP}}/infrastructure/subscriber/virtual/add_nas/{{id}}" enctype="multipart/form-data" class="row">
+	 <div class="col-sm-2">
+		<input type="text" name="name" placeholder="Short name" class="form-control">
+	 </div>
+	 <div class="col-sm-3">
+		<input type="text" name="server" placeholder="IP Address" class="form-control">
+	 </div>
+	 <div class="col-sm-3">
+		 <select name="nas_type" width='300px' class="form-control">
+            {% for vendor in vendors %}
+            <option value="{{vendor}}">{{vendor}}</option>
+            {% endfor %}
+		</select>
+	 </div>
+     <div class="col-sm-2">
+		<input type="text" name="secret" class="form-control" placeholder="Secret">
+	 </div>
+	 <div class="col-sm-2">
+		  <input id='role_add_button' class="btn btn-danger" type="submit" value="Add NAS" >
+	 </div>
+</form>
+
+{% endblock %}
+
+{% block buttons %}
+    <a href="{{ APP }}/infrastructure/subscriber/virtual/{{id}}" class="btn btn-default">Cancel</a>
+    <a data-confirm="Delete Virtual?" data-close-windows="2" href="{{ APP }}/infrastructure/subscriber/virtual/delete/{{id}}" class="btn btn-danger">Remove</a>
+    <a href="{{ APP }}/infrastructure/subscriber/virtual/edit/{{id}}" data-form="form" class="btn btn-primary">Save</a>
+{% endblock %}

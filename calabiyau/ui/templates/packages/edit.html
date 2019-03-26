@@ -1,0 +1,52 @@
+{% extends "photonic/view.html" %}
+
+{% block content %}
+    <form id="form" method='post' enctype="multipart/form-data">
+        {{ form }}
+    </form>
+<table class="display" data-endpoint='subscriber' data-url="/v1/package/{{id}}/attrs" width="100%">
+    <thead>
+        <tr>
+            <th id='attribute'>Attribute</th>
+            <th id='value'>Value</th>
+            <th id='ctx'>Context</th>
+            <th id='nas_type'>Vendor</th>
+            <th data-confirm="Delete Attribute Value Pair?" data-href="/infrastructure/subscriber/package/rm_attr" data-close width="2rem">
+                <span data-feather="minus-square"></span>
+        </tr>
+    </thead>
+</table>
+ <form class="row" autocomplete="off" data-msg="Succesfully added AVP" data-datatable action="{{APP}}/infrastructure/subscriber/package/add_attr/{{id}}" enctype="multipart/form-data" class="row">
+	 <div class="col-sm-3">
+		 <select name="attribute" class="form-control" data-endpoint="subscriber" data-url="/v1/radius/avps">
+		</select>
+	 </div>
+	 <div class="col-sm-3">
+		<input class="form-control" type="text" name="value" placeholder="Value">
+	 </div>
+	 <div class="col-sm-2">
+		 <select name="ctx" class="form-control">
+            {% for c in ctx %}
+            <option value="{{c}}">{{c}}</option>
+            {% endfor %}
+		</select>
+	 </div>
+	 <div class="col-sm-2">
+		 <select name="nas_type" class="form-control">
+            {% for vendor in vendors %}
+            <option value="{{vendor}}">{{vendor}}</option>
+            {% endfor %}
+		</select>
+	 </div>
+	 <div class="col-sm-2">
+		  <input class="form-control btn btn-danger" type="submit" value="Add AVP" >
+	 </div>
+</form>
+
+{% endblock %}
+
+{% block buttons %}
+    <a href="{{ APP }}/infrastructure/subscriber/package/{{id}}" class="btn btn-default">Cancel</a>
+    <a data-confirm="Remove subscriber package {{name}}?" data-close-windows="2" href="{{ APP }}/infrastructure/subscriber/package/delete/{{id}}" class="btn btn-danger">Remove</a>
+    <a href="{{ APP }}/infrastructure/subscriber/package/edit/{{id}}" data-form="form" class="btn btn-primary">Save</a>
+{% endblock %}

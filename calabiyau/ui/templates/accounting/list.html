@@ -1,0 +1,21 @@
+{% extends "photonic/view.html" %}
+{% block content %}
+<table class="display" data-endpoint='subscriber' data-url="/v1/accounting" width="100%">
+    <thead>
+        <tr>
+            <th id='username'>Username</th>
+            <th id='nasipaddress'>NAS</th>
+            <th id='acctstarttime'>Login@</th>
+            <th id='acctstoptime'>Logout@</th>
+            <th id='framedipaddress'>IP</th>
+            <th id='acctinputoctets'>Bytes Input</th>
+            <th id='acctoutputoctets'>Bytes Output</th>
+            <th data-href="/infrastructure/subscriber/accounting" data-modal width="2rem">
+                <span data-feather="edit"></span>
+            </th>
+        </tr>
+    </thead>
+</table>
+{% endblock %}
+{% block buttons %}
+{% endblock %}
