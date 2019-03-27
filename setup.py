@@ -182,7 +182,7 @@ setup_dict = dict(
     zip_safe=False,  # don't use eggs
     entry_points={
         'console_scripts': [
-            'calabiyaur = calabiyau.main:entry_point'
+            'calabiyau = calabiyau.main:entry_point'
         ],
         'tachyonic.ui': [
             'calabiyau = calabiyau.ui.app'
