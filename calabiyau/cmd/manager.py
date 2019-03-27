@@ -37,7 +37,7 @@ from luxon import GetLogger
 from luxon import dbw
 from luxon.utils.mysql import retry
 from luxon.exceptions import SQLIntegrityError
-from pyipcalc import IPNetwork
+#from pyipcalc import IPNetwork
 
 from calabiyau.msgbus.radius.acct import acct as radius_acct
 
