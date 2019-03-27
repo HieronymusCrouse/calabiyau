@@ -184,13 +184,11 @@ setup_dict = dict(
         'console_scripts': [
             'calabiyaur = calabiyau.main:entry_point'
         ],
-    },
-    python_requires='>=3.6',
-    entry_points={
         'tachyonic.ui': [
             'calabiyau = calabiyau.ui.app'
-        ],  
-    }
+        ]  
+    },
+    python_requires='>=3.6',
 )
 
 
