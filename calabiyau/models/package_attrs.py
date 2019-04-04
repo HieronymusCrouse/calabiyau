@@ -43,7 +43,8 @@ class calabiyau_package_attr(SQLModel):
     attribute = SQLModel.String()
     value = SQLModel.String()
     ctx = SQLModel.String()
-    nas_type = SQLModel.String(max_length=64, null=False)
+    nas_type = SQLModel.Word(max_length=64, null=False,
+                             regex=r'^[a-z0-9\._-]+$')
     creation_time = SQLModel.DateTime(readonly=True, default=now)
     pkg_attr_ref = SQLModel.ForeignKey(package_id, calabiyau_package.id)
     primary_key = id

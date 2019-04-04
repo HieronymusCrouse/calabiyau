@@ -32,10 +32,10 @@ from luxon import router
 from luxon.helpers.api import raw_list, sql_list, obj
 from luxon.utils.hashing import md5sum
 
-from subscriber.lib.radius.avps import avps
-from subscriber.models.subscribers import subscriber
-from subscriber.helpers.sessions import disconnect_user
-from subscriber.helpers.packages import get_package, calc_next_expire
+from calabiyau.lib.radius.avps import avps
+from calabiyau.models.subscribers import calabiyau_subscriber
+from calabiyau.helpers.sessions import disconnect_user
+from calabiyau.helpers.packages import get_package, calc_next_expire
 
 from luxon import GetLogger
 
@@ -58,37 +58,57 @@ class Users(object):
                    tag='services:admin')
 
     def user(self, req, resp, id):
-        return obj(req, subscriber, sql_id=id,
+        return obj(req, calabiyau_subscriber, sql_id=id,
                    hide=('password',))
 
     def users(self, req, resp):
-        return sql_list(req, 'subscriber',
+        return sql_list(req, 'calabiyau_subscriber',
                         ('id', 'username', 'name',),)
 
-    def create(self, req, resp):
-        user = obj(req, subscriber,
-                   hide=('password',))
+    def pkg_set(self, req, user):
         if req.json.get('package_id'):
             pkg = get_package(req.json.get('package_id'))
-            if pkg['plan'] == 'data':
-                user['volume_expire'] = calc_next_expire(
-                    pkg['volume_metric'],
-                    pkg['volume_span'])
-            if pkg['package_span'] and pkg['package_span'] > 0:
-                user['package_expire'] = calc_next_expire(
-                    pkg['package_metric'],
-                    pkg['package_span'])
+            if user['volume_expire'] is None:
+                if pkg['plan'] == 'data':
+                    if pkg['volume_span'] and pkg['volume_span'] > 0:
+                        if pkg['volume_gb'] and pkg['volume_gb'] > 0:
+                            user['volume_expire'] = calc_next_expire(
+                                pkg['volume_metric'],
+                                pkg['volume_span'])
+                        else:
+                            user['volume_expire'] = None
+                    else:
+                        user['volume_expire'] = None
+                else:
+                    user['volume_expire'] = None
+
+            if user['package_expire'] is None:
+                if pkg['package_span'] and pkg['package_span'] > 0:
+                    user['package_expire'] = calc_next_expire(
+                        pkg['package_metric'],
+                        pkg['package_span'])
+                else:
+                    user['package_expire'] = None
+
+    def create(self, req, resp):
+        user = obj(req, calabiyau_subscriber,
+                   hide=('password',))
+
+        self.pkg_set(req, user)
+
         if req.json.get('password'):
             user['password'] = md5sum(req.json['password'])
         user.commit()
         return user
 
     def update(self, req, resp, id):
-        user = obj(req, subscriber, sql_id=id,
+        user = obj(req, calabiyau_subscriber, sql_id=id,
                    hide=('password',))
 
         if req.json.get('password'):
             user['password'] = md5sum(req.json['password'])
+
+        self.pkg_set(req, user)
 
         if req.json.get('enabled'):
             if user['enabled'] is False:
@@ -100,7 +120,7 @@ class Users(object):
         return user
 
     def delete(self, req, resp, id):
-        user = obj(req, subscriber, sql_id=id)
+        user = obj(req, calabiyau_subscriber, sql_id=id)
         #disconnect_user(user['virtual_id'],
         #                user['username'])
         user.commit()

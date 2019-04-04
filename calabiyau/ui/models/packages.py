@@ -30,8 +30,8 @@
 from luxon import Model
 from luxon.utils.timezone import now
 
-from subscriber.ui.helpers.virtual import virtual
-from subscriber.ui.helpers.pool import pool
+from calabiyau.ui.helpers.virtual import virtual
+from calabiyau.ui.helpers.pool import pool
 
 
 class package(Model):
@@ -41,10 +41,9 @@ class package(Model):
     pool_id = Model.Uuid(placeholder='Select IP Pool', callback=pool)
     simultaneous = Model.Boolean(default=True)
     package_metric = Model.Enum('days', 'weeks', 'months')
-    package_span = Model.TinyInt(null=True, default=1)
-    volume_gb = Model.SmallInt(null=True, default=1)
+    package_span = Model.TinyInt(null=True, default=0)
+    volume_gb = Model.SmallInt(null=True, default=0)
     volume_metric = Model.Enum('days', 'weeks', 'months')
-    volume_span = Model.TinyInt(null=True, default=1)
+    volume_span = Model.TinyInt(null=True, default=0)
     volume_repeat = Model.Boolean(default=True)
-    dpi = Model.String(max_length=20)
     creation_time = Model.DateTime(default=now, readonly=True)

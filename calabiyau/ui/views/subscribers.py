@@ -33,10 +33,10 @@ from luxon import register
 from luxon import render_template
 from luxon.utils.bootstrap4 import form
 
-from calabiyau.ui.models.calabiyaus import calabiyau
+from calabiyau.ui.models.subscribers import subscriber
 
 g.nav_menu.add('/Services/Subscribers',
-               href='/services/calabiyaus',
+               href='/services/subscribers',
                tag='services:view',
                feather='users')
 
@@ -45,43 +45,43 @@ g.nav_menu.add('/Services/Subscribers',
 class Subscribers():
     def __init__(self):
         router.add('GET',
-                   '/services/calabiyaus',
+                   '/services/subscribers',
                    self.list,
                    tag='services:view')
 
         router.add('GET',
-                   '/services/calabiyau/{id}',
+                   '/services/subscriber/{id}',
                    self.view,
                    tag='services:view')
 
         router.add('GET',
-                   '/services/calabiyau/delete/{id}',
+                   '/services/subscriber/delete/{id}',
                    self.delete,
                    tag='services:admin')
 
         router.add(('GET', 'POST',),
-                   '/services/calabiyau/add',
+                   '/services/subscriber/add',
                    self.add,
                    tag='services:admin')
 
         router.add(('GET', 'POST',),
-                   '/services/calabiyau/edit/{id}',
+                   '/services/subscriber/edit/{id}',
                    self.edit,
                    tag='services:admin')
 
     def list(self, req, resp):
-        return render_template('calabiyau.ui/calabiyaus/list.html',
+        return render_template('calabiyau.ui/subscribers/list.html',
                                view='Subscribers')
 
     def delete(self, req, resp, id):
-        req.context.api.execute('DELETE', '/v1/calabiyau/%s' % id,
-                                endpoint='calabiyau')
+        req.context.api.execute('DELETE', '/v1/subscriber/%s' % id,
+                                endpoint='subscriber')
 
     def view(self, req, resp, id):
-        user = req.context.api.execute('GET', '/v1/calabiyau/%s' % id,
-                                       endpoint='calabiyau')
-        html_form = form(calabiyau, user.json, readonly=True)
-        return render_template('calabiyau.ui/calabiyaus/view.html',
+        user = req.context.api.execute('GET', '/v1/subscriber/%s' % id,
+                                       endpoint='subscriber')
+        html_form = form(subscriber, user.json, readonly=True)
+        return render_template('calabiyau.ui/subscribers/view.html',
                                form=html_form,
                                id=id,
                                view="View Subscriber")
@@ -89,18 +89,18 @@ class Subscribers():
     def edit(self, req, resp, id):
         if req.method == 'POST':
             data = req.form_dict
-            req.context.api.execute('PUT', '/v1/calabiyau/%s' % id,
+            req.context.api.execute('PUT', '/v1/subscriber/%s' % id,
                                     data=data,
-                                    endpoint='calabiyau')
+                                    endpoint='subscriber')
             req.method = 'GET'
             return self.view(req, resp, id)
         else:
             user = req.context.api.execute('GET',
-                                           '/v1/calabiyau/%s' % id,
-                                           endpoint='calabiyau')
-            html_form = form(calabiyau, user.json)
+                                           '/v1/subscriber/%s' % id,
+                                           endpoint='subscriber')
+            html_form = form(subscriber, user.json)
             return render_template(
-                'calabiyau.ui/calabiyaus/edit.html',
+                'calabiyau.ui/subscribers/edit.html',
                 username=user.json['username'],
                 form=html_form,
                 id=id,
@@ -109,12 +109,12 @@ class Subscribers():
     def add(self, req, resp):
         if req.method == 'POST':
             data = req.form_dict
-            response = req.context.api.execute('POST', '/v1/calabiyau',
+            response = req.context.api.execute('POST', '/v1/subscriber',
                                                data=data,
-                                               endpoint='calabiyau')
+                                               endpoint='subscriber')
             return self.view(req, resp, response.json['id'])
         else:
-            html_form = form(calabiyau)
-            return render_template('calabiyau.ui/calabiyaus/add.html',
+            html_form = form(subscriber)
+            return render_template('calabiyau.ui/subscribers/add.html',
                                    view='Add Subscriber',
                                    form=html_form)

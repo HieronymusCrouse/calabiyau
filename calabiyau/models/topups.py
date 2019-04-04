@@ -33,7 +33,7 @@ from luxon import register
 from luxon import SQLModel
 from luxon.utils.timezone import now
 
-from calabiyau.models.calabiyaus import calabiyau
+from calabiyau.models.subscribers import calabiyau_subscriber
 
 
 @register.model()
@@ -47,5 +47,5 @@ class calabiyau_topup(SQLModel):
     volume_repeat = SQLModel.Boolean(default=False)
     creation_time = SQLModel.DateTime(readonly=True, default=now)
     topup_user_index = SQLModel.Index(user_id)
-    topup_user_ref = SQLModel.ForeignKey(user_id, calabiyau.id)
+    topup_user_ref = SQLModel.ForeignKey(user_id, calabiyau_subscriber.id)
     primary_key = id

@@ -28,15 +28,16 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
 
-from luxon.helpers.rmq import rmq
+from luxon.helpers.messagebus import MBClient
 
 
-def append(name, prefix, domain):
-    with rmq() as mb:
-        message = {
-            'type': 'append_pool',
-            'pool': {'name': name,
-                     'prefix': prefix,
-                     'domain': domain}
-        }
-        mb.distribute('subscriber', **message)
+def append(pool_id, prefix):
+    with MBClient('subscriber') as mb:
+        mb.send('append_pool', {'pool_id': pool_id,
+                                'prefix': prefix})
+
+
+def delete(pool_id, prefix):
+    with MBClient('subscriber') as mb:
+        mb.send('delete_pool', {'pool_id': pool_id,
+                                'prefix': prefix})

@@ -1,6 +1,6 @@
-import subscriber.ui.views.virtual
-import subscriber.ui.views.pool
-import subscriber.ui.views.packages
-import subscriber.ui.views.subscribers
-#import subscriber.ui.views.accounting
-#import subscriber.ui.views.sessions
+import calabiyau.ui.views.virtual
+import calabiyau.ui.views.pool
+import calabiyau.ui.views.packages
+import calabiyau.ui.views.subscribers
+#import calabiyau.ui.views.accounting
+#import calabiyau.ui.views.sessions

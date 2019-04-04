@@ -36,7 +36,7 @@ from luxon.utils.sql import build_where
 def disconnect(acct_id):
     with rmq() as mb:
         with db() as conn:
-            result = conn.execute('SELECT * FROM subscriber_accounting' +
+            result = conn.execute('SELECT * FROM calabiyau_accounting' +
                                   ' WHERE id = %s', acct_id).fetchall()
             for cdr in result:
                 message = {
@@ -52,11 +52,11 @@ def disconnect(acct_id):
 def disconnect_user(virtual_id, username=None):
     with db() as conn:
         nas_nodes = conn.execute(
-            'SELECT * FROM subscriber_nas' +
+            'SELECT * FROM calabiyau_nas' +
             ' WHERE virtual_id = %s', virtual_id).fetchall()
 
         for nas in nas_nodes:
-            sql = 'SELECT * FROM subscriber_accounting WHERE '
+            sql = 'SELECT * FROM calabiyau_accounting WHERE '
             where = {'nasipaddress': nas['server']}
             if username:
                 where = {'username': username}
@@ -69,7 +69,7 @@ def disconnect_user(virtual_id, username=None):
 
 def clear(nas_id):
     with db() as conn:
-        result = conn.execute('SELECT * FROM subscriber_nas' +
+        result = conn.execute('SELECT * FROM calabiyau_nas' +
                               ' WHERE id = %s', nas_id).fetchone()
         if result:
             server = result['server']

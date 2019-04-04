@@ -32,8 +32,8 @@ from luxon import register
 from luxon import router
 from luxon.helpers.api import sql_list, obj
 
-from subscriber.models.packages import subscriber_package
-from subscriber.models.package_attrs import subscriber_package_attr
+from calabiyau.models.packages import calabiyau_package
+from calabiyau.models.package_attrs import calabiyau_package_attr
 
 
 @register.resources()
@@ -57,38 +57,38 @@ class Groups(object):
                    tag='services')
 
     def package(self, req, resp, id):
-        return obj(req, subscriber_package, sql_id=id)
+        return obj(req, calabiyau_package, sql_id=id)
 
     def packages(self, req, resp):
-        return sql_list(req, 'subscriber_package', ('id', 'name', ))
+        return sql_list(req, 'calabiyau_package', ('id', 'name', ))
 
     def create(self, req, resp):
-        package = obj(req, subscriber_package)
+        package = obj(req, calabiyau_package)
         package.commit()
         return package
 
     def update(self, req, resp, id):
-        package = obj(req, subscriber_package, sql_id=id)
+        package = obj(req, calabiyau_package, sql_id=id)
         package.commit()
         return package
 
     def delete(self, req, resp, id):
-        package = obj(req, subscriber_package, sql_id=id)
+        package = obj(req, calabiyau_package, sql_id=id)
         package.commit()
         return package
 
     def attrs(self, req, resp, id):
         where = {'package_id': id}
-        return sql_list(req, 'subscriber_package_attr',
+        return sql_list(req, 'calabiyau_package_attr',
                         ('id', 'attribute', 'value', 'ctx', 'nas_type'),
                         where=where)
 
     def add_attr(self, req, resp, id):
-        attr = obj(req, subscriber_package_attr)
+        attr = obj(req, calabiyau_package_attr)
         attr['package_id'] = id
         attr.commit()
         return attr
 
     def rm_attr(self, req, resp, id):
-        attr = obj(req, subscriber_package_attr, sql_id=id)
+        attr = obj(req, calabiyau_package_attr, sql_id=id)
         attr.commit()
