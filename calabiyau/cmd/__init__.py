@@ -1,3 +1,3 @@
-import subscriber.cmd.setup
-import subscriber.cmd.manager
-import subscriber.cmd.radius
+import calabiyau.cmd.setup
+import calabiyau.cmd.manager
+import calabiyau.cmd.radius

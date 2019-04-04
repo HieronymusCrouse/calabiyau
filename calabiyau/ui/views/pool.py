@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2018 Christiaan Frans Rademan.
+# Copyright (c) 2018-2019 Christiaan Frans Rademan.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -36,7 +36,7 @@ from luxon.utils.bootstrap4 import form
 from calabiyau.ui.models.pool import pool
 
 g.nav_menu.add('/Infrastructure/Subscriber/IP Pool',
-               href='/infrastructure/calabiyau/pool',
+               href='/infrastructure/subscriber/pool',
                tag='services:view',
                feather='list')
 
@@ -45,32 +45,32 @@ g.nav_menu.add('/Infrastructure/Subscriber/IP Pool',
 class Pool():
     def __init__(self):
         router.add('GET',
-                   '/infrastructure/calabiyau/pool',
+                   '/infrastructure/subscriber/pool',
                    self.list,
                    tag='services')
 
         router.add('GET',
-                   '/infrastructure/calabiyau/pool/{id}',
+                   '/infrastructure/subscriber/pool/{id}',
                    self.view,
                    tag='services')
 
         router.add('GET',
-                   '/infrastructure/calabiyau/pool/delete/{id}',
+                   '/infrastructure/subscriber/pool/delete/{id}',
                    self.delete,
                    tag='services')
 
         router.add(('GET', 'POST',),
-                   '/infrastructure/calabiyau/pool/add',
+                   '/infrastructure/subscriber/pool/add',
                    self.add,
                    tag='services')
 
         router.add(('GET', 'POST',),
-                   '/infrastructure/calabiyau/pool/edit/{id}',
+                   '/infrastructure/subscriber/pool/edit/{id}',
                    self.edit,
                    tag='services')
 
         router.add('POST',
-                   '/infrastructure/calabiyau/pool/request/{id}',
+                   '/infrastructure/subscriber/pool/request/{id}',
                    self.request,
                    tag='services')
 
@@ -80,11 +80,11 @@ class Pool():
 
     def delete(self, req, resp, id):
         req.context.api.execute('DELETE', '/v1/pool/%s' % id,
-                                endpoint='calabiyau')
+                                endpoint='subscriber')
 
     def view(self, req, resp, id):
         vr = req.context.api.execute('GET', '/v1/pool/%s' % id,
-                                     endpoint='calabiyau')
+                                     endpoint='subscriber')
         html_form = form(pool, vr.json, readonly=True)
         return render_template('calabiyau.ui/pool/view.html',
                                view='Subscriber IP Pool',
@@ -95,12 +95,12 @@ class Pool():
         if req.method == 'POST':
             req.context.api.execute('PUT', '/v1/pool/%s' % id,
                                     data=req.form_dict,
-                                    endpoint='calabiyau')
+                                    endpoint='subscriber')
             return self.view(req, resp, id)
         else:
             response = req.context.api.execute('GET',
                                                '/v1/pool/%s' % id,
-                                               endpoint='calabiyau')
+                                               endpoint='subscriber')
             html_form = form(pool, response.json)
             return render_template('calabiyau.ui/pool/edit.html',
                                    name=response.json['pool_name'],
@@ -112,7 +112,7 @@ class Pool():
         if req.method == 'POST':
             response = req.context.api.execute('POST', '/v1/pool',
                                                data=req.form_dict,
-                                               endpoint='calabiyau')
+                                               endpoint='subscriber')
             return self.view(req, resp, response.json['id'])
         else:
             html_form = form(pool)
@@ -126,11 +126,11 @@ class Pool():
         if req.form_dict['request'] == 'add':
             req.context.api.execute('POST', '/v1/pool/%s/add_prefix'
                                     % id,
-                                    endpoint='calabiyau',
+                                    endpoint='subscriber',
                                     data=data)
         if req.form_dict['request'] == 'remove':
             req.context.api.execute('DELETE',
                                     '/v1/pool/%s/rm_prefix'
                                     % id,
-                                    endpoint='calabiyau',
+                                    endpoint='subscriber',
                                     data=data)

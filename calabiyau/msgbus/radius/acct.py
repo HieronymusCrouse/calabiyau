@@ -31,17 +31,16 @@ from luxon import db
 from luxon import dbw
 from luxon import GetLogger
 from luxon.utils.mysql import retry
-from luxon.utils.system import execute
-from luxon.utils.files import rm
 from luxon.utils.timezone import (calc_next_expire,
                                   utc,
                                   parse_datetime,
                                   now)
-from subscriber.msgbus.radius.helpers import (parse_fr,
-                                              require_attributes,
-                                              get_user,
-                                              get_attributes,
-                                              update_ip)
+from calabiyau.msgbus.radius.helpers import (parse_fr,
+                                             require_attributes,
+                                             get_user,
+                                             get_attributes,
+                                             update_ip)
+from calabiyau.utils.radius import pod, coa
 
 log = GetLogger(__name__)
 
@@ -67,7 +66,7 @@ def do_acct(db, fr, dt, user, status):
                      " acctstarttime," +
                      " acctupdated," +
                      " accttype" +
-                     " FROM subscriber_session" +
+                     " FROM calabiyau_session" +
                      ' WHERE acctuniqueid = %s' +
                      ' LIMIT 1' +
                      ' FOR UPDATE',
@@ -83,7 +82,7 @@ def do_acct(db, fr, dt, user, status):
         #############################################
         crsr.execute("SELECT" +
                      " id" +
-                     " FROM subscriber_accounting" +
+                     " FROM calabiyau_accounting" +
                      " WHERE user_id = %s" +
                      " AND date(today) = date(now())" +
                      " FOR UPDATE",
@@ -94,7 +93,7 @@ def do_acct(db, fr, dt, user, status):
             ######################################################
             # CREATE/UPDATE SESSION WITH INPUT AND OUTPUT OCTETS #
             ######################################################
-            crsr.execute("INSERT INTO subscriber_session" +
+            crsr.execute("INSERT INTO calabiyau_session" +
                          " (id," +
                          " user_id," +
                          " acctsessionid," +
@@ -187,7 +186,7 @@ def do_acct(db, fr, dt, user, status):
                              prev_acctoutputoctets)
 
             # INSERT/UPDATE ACCOUNTING RECORD
-            crsr.execute('INSERT INTO subscriber_accounting' +
+            crsr.execute('INSERT INTO calabiyau_accounting' +
                          ' (id, user_id, today, acctinputoctets,' +
                          ' acctoutputoctets)' +
                          ' VALUES' +
@@ -206,13 +205,13 @@ def do_acct(db, fr, dt, user, status):
         return (input_octets, output_octets,)
 
 
-def coa(crsr, user, ctx, fr, secret, status):
+def applyctx(crsr, user, ctx, fr, secret, status):
     if (status == 'interim-update' or
             status == 'start'):
 
         nas_session_id = fr['Acct-Session-Id']
-        unique_session_id = fr['Acct-Unique-Session-Id']
         nas_ip_address = fr['NAS-IP-Address']
+        unique_session_id = fr['Acct-Unique-Session-Id']
 
         ctx_values = ['activate-coa',
                       'deactivate-coa']
@@ -220,51 +219,17 @@ def coa(crsr, user, ctx, fr, secret, status):
         attributes = get_attributes(crsr, user, ctx_values[ctx])
         if not attributes:
             # SEND POD
-            with open('/tmp/pod_%s.txt' % unique_session_id, 'w') as pod:
-                pod.write('Acct-Session-Id = "%s"\n' % nas_session_id)
-                pod.write('User-Name = "%s"\n' % user['username'])
-                pod.write('NAS-IP-Address = %s\n' % nas_ip_address)
-            try:
-                execute(['/usr/bin/env',
-                         'radclient',
-                         '-f',
-                         '/tmp/pod_%s.txt' % unique_session_id,
-                         '-x',
-                         '%s:3799' % nas_ip_address,
-                         'disconnect',
-                         secret])
-                crsr.execute('UPDATE subscriber_session' +
-                             ' SET ctx = %s' +
-                             ' WHERE acctuniqueid = %s',
-                             (ctx, unique_session_id,))
-            except Exception:
-                pass
-
-            rm('/tmp/pod_%s.txt' % unique_session_id)
+            pod(nas_ip_address, secret,
+                user['username'], nas_session_id)
         else:
-            # SEND COA
-            with open('/tmp/coa_%s.txt' % unique_session_id, 'w') as pod:
-                pod.write('Acct-Session-Id = "%s"\n' % nas_session_id)
-                pod.write('User-Name = "%s"\n' % user['username'])
-                pod.write('NAS-IP-Address = %s\n' % nas_ip_address)
-                for attribute in attributes:
-                    pod.write('%s = %s\n' % (attribute[0], attribute[1],))
-            try:
-                execute(['/usr/bin/env',
-                         'radclient',
-                         '-f',
-                         '/tmp/coa_%s.txt' % unique_session_id,
-                         '-x',
-                         '%s:3799' % nas_ip_address,
-                         'coa',
-                         secret])
-                crsr.execute('UPDATE subscriber_session' +
-                             ' SET ctx = %s' +
-                             ' WHERE acctuniqueid = %s',
-                             (ctx, unique_session_id,))
-            except Exception:
-                pass
-            rm('/tmp/coa_%s.txt' % unique_session_id)
+            coa(nas_ip_address, secret,
+                user['username'], nas_session_id,
+                attributes)
+
+        crsr.execute('UPDATE subscriber_session' +
+                     ' SET ctx = %s' +
+                     ' WHERE acctuniqueid = %s',
+                     (ctx, unique_session_id,))
 
 
 @retry()
@@ -288,7 +253,7 @@ def usage(db, fr, user, input_octets=0, output_octets=0, status="start"):
         crsr.execute("SELECT" +
                      " id," +
                      " ctx" +
-                     " FROM subscriber_session" +
+                     " FROM calabiyau_session" +
                      ' WHERE acctuniqueid = %s' +
                      ' LIMIT 1' +
                      ' FOR UPDATE',
@@ -300,11 +265,11 @@ def usage(db, fr, user, input_octets=0, output_octets=0, status="start"):
             if (utc(user['package_expire']) and
                     utc_datetime > utc(user['package_expire'])):
                 if session_ctx != 1:
-                    coa(crsr, user, 1, fr, nas_secret, status)
+                    applyctx(crsr, user, 1, fr, nas_secret, status)
                 crsr.commit()
                 return 1
 
-        crsr.execute('SELECT * FROM subscriber' +
+        crsr.execute('SELECT * FROM calabiyau_subscriber' +
                      ' WHERE id = %s' +
                      ' FOR UPDATE',
                      (user_id,))
@@ -330,7 +295,7 @@ def usage(db, fr, user, input_octets=0, output_octets=0, status="start"):
                         new_expire = calc_next_expire(user['volume_metric'],
                                                       user['volume_span'],
                                                       utc_datetime)
-                        crsr.execute("UPDATE subscriber" +
+                        crsr.execute("UPDATE calabiyau_subscriber" +
                                      " SET volume_expire = %s," +
                                      " volume_used_bytes = 0," +
                                      " volume_used = 0," +
@@ -339,11 +304,11 @@ def usage(db, fr, user, input_octets=0, output_octets=0, status="start"):
                                      (new_expire, user['id'],))
                         pkg_volume_used = 0
                         if session_ctx != 0:
-                            coa(crsr, user, 0, fr, nas_secret, status)
+                            applyctx(crsr, user, 0, fr, nas_secret, status)
                         crsr.commit()
                         return 0
                     else:
-                        crsr.execute("UPDATE subscriber" +
+                        crsr.execute("UPDATE calabiyau_subscriber" +
                                      " SET volume_expire = %s," +
                                      " volume_used_bytes = 0," +
                                      " volume_used = 1," +
@@ -356,7 +321,7 @@ def usage(db, fr, user, input_octets=0, output_octets=0, status="start"):
 
                 if (not pkg_volume_used and
                         volume_used_bytes > package_volume_bytes):
-                    crsr.execute("UPDATE subscriber" +
+                    crsr.execute("UPDATE calabiyau_subscriber" +
                                  " SET volume_used_bytes = 0," +
                                  " volume_used = 1," +
                                  " ctx = 1" +
@@ -366,21 +331,21 @@ def usage(db, fr, user, input_octets=0, output_octets=0, status="start"):
                              % user['username'])
                 elif (not pkg_volume_used and
                         volume_used_bytes <= package_volume_bytes):
-                    crsr.execute("UPDATE subscriber" +
+                    crsr.execute("UPDATE calabiyau_subscriber" +
                                  " SET volume_used_bytes = " +
                                  " volume_used_bytes + %s," +
                                  " ctx = 0" +
                                  " WHERE id = %s",
                                  (combined, user_id,))
                     if session_ctx != 0:
-                        coa(crsr, user, 0, fr, nas_secret, status)
+                        applyctx(crsr, user, 0, fr, nas_secret, status)
                     crsr.commit()
                     return 0
 
                 ####################
                 # CHECK TOPUP DATA #
                 ####################
-                crsr.execute('SELECT * FROM subscriber_topup' +
+                crsr.execute('SELECT * FROM calabiyau_topup' +
                              ' WHERE user_id = %s' +
                              ' ORDER BY creation_time asc' +
                              ' FOR UPDATE',
@@ -404,17 +369,17 @@ def usage(db, fr, user, input_octets=0, output_octets=0, status="start"):
                                 topup['volume_span'],
                                 utc_datetime)
 
-                            crsr.execute("UPDATE subscriber_topup" +
+                            crsr.execute("UPDATE calabiyau_topup" +
                                          " SET volume_expire = %s" +
                                          " WHERE id = %s",
                                          (new_expire, topup['id'],))
-                            crsr.execute("UPDATE subscriber" +
+                            crsr.execute("UPDATE calabiyau_subscriber" +
                                          " SET volume_used_bytes = 0," +
                                          " ctx = 0" +
                                          " WHERE id = %s",
                                          (user_id,))
                             if session_ctx != 0:
-                                coa(crsr, user, 0, fr, nas_secret, status)
+                                applyctx(crsr, user, 0, fr, nas_secret, status)
                             crsr.commit()
                             return 0
                         else:
@@ -422,25 +387,25 @@ def usage(db, fr, user, input_octets=0, output_octets=0, status="start"):
                                      (user['username'],
                                       topup['volume_gb'],
                                       topup['creation_time'],))
-                            crsr.execute("UPDATE subscriber" +
+                            crsr.execute("UPDATE calabiyau_subscriber" +
                                          " SET volume_used_bytes = 0," +
                                          " ctx = 0" +
                                          " WHERE id = %s",
                                          (user_id,))
                             crsr.execute('DELETE FROM' +
-                                         ' subscriber_topup' +
+                                         ' calabiyau_topup' +
                                          ' WHERE id = %s',
                                          (topup['id'],))
                     else:
                         if volume_used_bytes < topup_volume_bytes:
-                            crsr.execute("UPDATE subscriber" +
+                            crsr.execute("UPDATE calabiyau_subscriber" +
                                          " SET volume_used_bytes = " +
                                          " volume_used_bytes + %s," +
                                          " ctx = 0" +
                                          " WHERE id = %s",
                                          (combined, user_id,))
                             if session_ctx != 0:
-                                coa(crsr, user, 0, fr, nas_secret, status)
+                                applyctx(crsr, user, 0, fr, nas_secret, status)
                             crsr.commit()
                             return 0
                         else:
@@ -448,27 +413,27 @@ def usage(db, fr, user, input_octets=0, output_octets=0, status="start"):
                                      (user['username'],
                                       topup['volume_gb'],
                                       topup['creation_time'],))
-                            crsr.execute("UPDATE subscriber" +
+                            crsr.execute("UPDATE calabiyau_subscriber" +
                                          " SET volume_used_bytes = 0," +
                                          " ctx = 0" +
                                          " WHERE id = %s",
                                          (user_id,))
                             crsr.execute('DELETE FROM' +
-                                         ' subscriber_topup' +
+                                         ' calabiyau_topup' +
                                          ' WHERE id = %s',
                                          (topup['id'],))
 
                 if session_ctx != 1:
-                    coa(crsr, user, 1, fr, nas_secret, status)
+                    applyctx(crsr, user, 1, fr, nas_secret, status)
                 crsr.commit()
                 return 1
             else:
                 if session_ctx != 0:
-                    coa(crsr, user, 0, fr, nas_secret, status)
+                    applyctx(crsr, user, 0, fr, nas_secret, status)
                 crsr.commit()
                 return 0
         if session_ctx != 1:
-            coa(crsr, user, 1, fr, nas_secret, status)
+            applyctx(crsr, user, 1, fr, nas_secret, status)
         crsr.commit()
         return 1
 
@@ -506,6 +471,6 @@ def acct(msg):
             usage(connw, fr, user, input_octets, output_octets, status)
 
             if not user['static_ip4'] and user['pool_id']:
-                update_ip(dbw, user, fr)
+                update_ip(connw, user, fr)
 
     return True

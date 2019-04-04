@@ -42,7 +42,8 @@ class calabiyau_nas(SQLModel):
     virtual_id = SQLModel.Uuid(internal=True)
     name = SQLModel.Word(max_length=64, null=False,
                          regex=r'^[a-z0-9\._-]+$')
-    nas_type = SQLModel.String(max_length=64, null=False)
+    nas_type = SQLModel.Word(max_length=64, upper=True, null=False,
+                             regex=r'^[a-z0-9\._-]+$')
     secret = SQLModel.String(max_length=64, null=False)
     server = SQLModel.String(max_length=64, null=False)
     description = SQLModel.Text()

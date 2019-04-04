@@ -11,10 +11,10 @@
             <th id='server'>Server</th>
             <th id='nas_type'>Type</th>
             <th id='secret'>Secret</th>
-			<th data-confirm="Clear NAS Sessions on Radius?" data-href="/infrastructure/subscriber/virtual/clear" data-close width="2rem">
+			<th data-confirm="Clear NAS Sessions on Radius?" data-href="/infrastructure/subscriber/virtual/clear" data-close-window width="2rem">
 				<span data-feather="user-x"></span>
 			</th>
-			<th data-confirm="Delete NAS Server?" data-href="/infrastructure/subscriber/virtual/rm_nas" data-close width="2rem">
+			<th data-confirm="Delete NAS Server?" data-href="/infrastructure/subscriber/virtual/rm_nas" data-close-window width="2rem">
 				<span data-feather="minus-square"></span>
 			</th>
         </tr>
@@ -28,10 +28,7 @@
 		<input type="text" name="server" placeholder="IP Address" class="form-control">
 	 </div>
 	 <div class="col-sm-3">
-		 <select name="nas_type" width='300px' class="form-control">
-            {% for vendor in vendors %}
-            <option value="{{vendor}}">{{vendor}}</option>
-            {% endfor %}
+		 <select data-url="/v1/vendors" data-endpoint="subscriber" data-tags name="nas_type" width='300px' class="form-control">
 		</select>
 	 </div>
      <div class="col-sm-2">

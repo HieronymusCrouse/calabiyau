@@ -11,7 +11,7 @@
             <th id='value'>Value</th>
             <th id='ctx'>Context</th>
             <th id='nas_type'>Vendor</th>
-            <th data-confirm="Delete Attribute Value Pair?" data-href="/infrastructure/subscriber/package/rm_attr" data-close width="2rem">
+            <th data-confirm="Delete Attribute Value Pair?" data-href="/infrastructure/subscriber/package/rm_attr" data-close-window width="2rem">
                 <span data-feather="minus-square"></span>
         </tr>
     </thead>
@@ -32,11 +32,8 @@
 		</select>
 	 </div>
 	 <div class="col-sm-2">
-		 <select name="nas_type" class="form-control">
-            {% for vendor in vendors %}
-            <option value="{{vendor}}">{{vendor}}</option>
-            {% endfor %}
-		</select>
+		 <select data-url="/v1/vendors" data-endpoint="subscriber" name="nas_type" class="form-control">
+         </select>
 	 </div>
 	 <div class="col-sm-2">
 		  <input class="form-control btn btn-danger" type="submit" value="Add AVP" >

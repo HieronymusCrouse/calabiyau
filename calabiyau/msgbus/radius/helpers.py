@@ -36,40 +36,40 @@ log = GetLogger(__name__)
 def get_user(db, nas_ip, username):
     with db.cursor() as crsr:
         crsr.execute('SELECT' +
-                     ' subscriber.id as id,' +
-                     ' subscriber.username as username,' +
-                     ' subscriber.password as password,' +
-                     ' subscriber.package_id as package_id,' +
-                     ' subscriber.ctx as ctx,' +
-                     ' subscriber.static_ip4 as static_ip4,' +
-                     ' subscriber.volume_used_bytes' +
+                     ' calabiyau_subscriber.id as id,' +
+                     ' calabiyau_subscriber.username as username,' +
+                     ' calabiyau_subscriber.password as password,' +
+                     ' calabiyau_subscriber.package_id as package_id,' +
+                     ' calabiyau_subscriber.ctx as ctx,' +
+                     ' calabiyau_subscriber.static_ip4 as static_ip4,' +
+                     ' calabiyau_subscriber.volume_expire as volume_expire,' +
+                     ' calabiyau_subscriber.volume_used_bytes' +
                      ' as volume_used_bytes,' +
-                     ' subscriber.volume_used' +
+                     ' calabiyau_subscriber.volume_used' +
                      ' as volume_used,' +
-                     ' subscriber_package.plan as plan,' +
-                     ' subscriber_package.simultaneous as simultaneous,' +
-                     ' subscriber_package.pool_id as pool_id,' +
-                     ' subscriber.volume_expire as volume_expire,' +
-                     ' subscriber.package_expire' +
+                     ' calabiyau_subscriber.package_expire' +
                      ' as package_expire,' +
-                     ' subscriber_package.package_span as package_span,' +
-                     ' subscriber_package.volume_gb as volume_gb,' +
-                     ' subscriber_package.volume_span as volume_span,' +
-                     ' subscriber_package.volume_repeat as volume_repeat,' +
-                     ' subscriber_package.volume_metric as volume_metric,' +
-                     ' subscriber_nas.virtual_id as virtual_id,' +
-                     ' subscriber_nas.nas_type as nas_type,' +
-                     ' subscriber_nas.secret as nas_secret,' +
-                     ' subscriber.enabled as enabled' +
-                     ' FROM subscriber_package' +
-                     ' INNER JOIN subscriber' +
-                     ' ON subscriber.package_id' +
-                     ' = subscriber_package.id' +
-                     ' INNER JOIN subscriber_nas' +
-                     ' ON subscriber_package.virtual_id' +
-                     ' = subscriber_nas.virtual_id' +
-                     ' WHERE subscriber_nas.server = %s' +
-                     ' AND subscriber.username = %s',
+                     ' calabiyau_package.plan as plan,' +
+                     ' calabiyau_package.simultaneous as simultaneous,' +
+                     ' calabiyau_package.pool_id as pool_id,' +
+                     ' calabiyau_package.package_span as package_span,' +
+                     ' calabiyau_package.volume_gb as volume_gb,' +
+                     ' calabiyau_package.volume_span as volume_span,' +
+                     ' calabiyau_package.volume_repeat as volume_repeat,' +
+                     ' calabiyau_package.volume_metric as volume_metric,' +
+                     ' calabiyau_nas.virtual_id as virtual_id,' +
+                     ' calabiyau_nas.nas_type as nas_type,' +
+                     ' calabiyau_nas.secret as nas_secret,' +
+                     ' calabiyau_subscriber.enabled as enabled' +
+                     ' FROM calabiyau_package' +
+                     ' INNER JOIN calabiyau_subscriber' +
+                     ' ON calabiyau_subscriber.package_id' +
+                     ' = calabiyau_package.id' +
+                     ' INNER JOIN calabiyau_nas' +
+                     ' ON calabiyau_package.virtual_id' +
+                     ' = calabiyau_nas.virtual_id' +
+                     ' WHERE calabiyau_nas.server = %s' +
+                     ' AND calabiyau_subscriber.username = %s',
                      (nas_ip,
                       username,))
         user = crsr.fetchone()
@@ -92,7 +92,10 @@ def parse_fr(fr):
 
 def update_ip(db, user, fr):
     with db.cursor() as crsr:
-        crsr.execute('SELECT id FROM subscriber_ippool' +
+        if 'Framed-IP-Address' not in fr:
+            return None
+
+        crsr.execute('SELECT id FROM calabiyau_ippool' +
                      ' WHERE pool_id = %s AND' +
                      ' framedipaddress = %s' +
                      ' FOR UPDATE',
@@ -100,7 +103,7 @@ def update_ip(db, user, fr):
 
         if (fr['Acct-Status-Type'] == 'Interim-Update' or
                 fr['Acct-Status-Type'] == 'Start'):
-            crsr.execute('UPDATE subscriber_ippool SET' +
+            crsr.execute('UPDATE calabiyau_ippool SET' +
                          ' expiry_time = NOW() +' +
                          ' INTERVAL 86400 SECOND' +
                          ' WHERE pool_id = %s AND' +
@@ -108,7 +111,7 @@ def update_ip(db, user, fr):
                          ' expiry_time is not NULL',
                          (user['pool_id'], fr['Framed-IP-Address'],))
         elif fr['Acct-Status-Type'] == 'Stop':
-            crsr.execute('UPDATE subscriber_ippool SET' +
+            crsr.execute('UPDATE calabiyau_ippool SET' +
                          ' expiry_time = NULL' +
                          ' WHERE pool_id = %s AND' +
                          ' framedipaddress = %s',
@@ -125,7 +128,7 @@ def format_attributes(attributes):
 
 
 def get_attributes(crsr, user, ctx):
-    crsr.execute('SELECT attribute, value FROM subscriber_package_attr' +
+    crsr.execute('SELECT attribute, value FROM calabiyau_package_attr' +
                  ' WHERE package_id = %s AND ctx = %s' +
                  ' AND nas_type = %s',
                  (user['package_id'],

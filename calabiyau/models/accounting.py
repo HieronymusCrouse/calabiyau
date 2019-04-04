@@ -32,7 +32,7 @@ from uuid import uuid4
 from luxon import register
 from luxon import SQLModel
 
-from calabiyau.models.calabiyaus import calabiyau
+from calabiyau.models.subscribers import calabiyau_subscriber
 
 
 @register.model()
@@ -46,4 +46,4 @@ class calabiyau_accounting(SQLModel):
     acc_unique = SQLModel.UniqueIndex(user_id, today)
     acc_username_index = SQLModel.Index(user_id)
     acc_today_index = SQLModel.Index(today)
-    acc_user_ref = SQLModel.ForeignKey(user_id, calabiyau.id)
+    acc_user_ref = SQLModel.ForeignKey(user_id, calabiyau_subscriber.id)
