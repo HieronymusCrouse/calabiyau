@@ -38,7 +38,8 @@ from calabiyau.ui.models.pool import pool
 g.nav_menu.add('/Infrastructure/Subscriber/IP Pool',
                href='/infrastructure/subscriber/pool',
                tag='services:view',
-               feather='list')
+               feather='list',
+               endpoint='subscriber')
 
 
 @register.resources()

@@ -39,7 +39,8 @@ from calabiyau.lib.vendor import vendors
 g.nav_menu.add('/Infrastructure/Subscriber/Virtual',
                href='/infrastructure/subscriber/virtual',
                tag='infrastructure:admin',
-               feather='at-sign')
+               feather='at-sign',
+               endpoint='subscriber')
 
 
 @register.resources()
