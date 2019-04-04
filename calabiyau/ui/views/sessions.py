@@ -35,7 +35,8 @@ from luxon import render_template
 g.nav_menu.add('/Infrastructure/Subscriber/Sessions',
                href='/infrastructure/calabiyau/sessions',
                tag='services:view',
-               feather='users')
+               feather='users',
+               endpoint='subscriber')
 
 
 @register.resources()

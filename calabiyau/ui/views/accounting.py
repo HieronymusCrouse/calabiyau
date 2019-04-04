@@ -39,7 +39,8 @@ from calabiyau.ui.models.accounting import accounting
 g.nav_menu.add('/Infrastructure/Subscriber/Accounting',
                href='/infrastructure/calabiyau/accounting',
                tag='services:admin',
-               feather='users')
+               feather='users',
+               endpoint='subscriber')
 
 
 @register.resources()

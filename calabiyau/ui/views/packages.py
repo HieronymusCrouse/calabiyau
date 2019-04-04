@@ -41,7 +41,8 @@ from calabiyau.ui.models.packages import package
 g.nav_menu.add('/Infrastructure/Subscriber/Packages',
                href='/infrastructure/subscriber/packages',
                tag='services',
-               feather='package')
+               feather='package',
+               endpoint='subscriber')
 
 
 @register.resources()

@@ -38,7 +38,8 @@ from calabiyau.ui.models.subscribers import subscriber
 g.nav_menu.add('/Services/Subscribers',
                href='/services/subscribers',
                tag='services:view',
-               feather='users')
+               feather='users',
+               endpoint='subscriber')
 
 
 @register.resources()
