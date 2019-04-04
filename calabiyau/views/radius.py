@@ -32,7 +32,7 @@ from luxon import router
 from luxon.helpers.api import raw_list
 from luxon import GetLogger
 
-from subscriber.lib.radius.avps import avps
+from calabiyau.lib.radius.avps import avps
 
 log = GetLogger(__name__)
 

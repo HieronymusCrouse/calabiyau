@@ -32,7 +32,7 @@ from uuid import uuid4
 from luxon import register
 from luxon import SQLModel
 
-from calabiyau.models.calabiyaus import calabiyau
+from calabiyau.models.subscribers import calabiyau_subscriber
 
 
 @register.model()
@@ -66,4 +66,4 @@ class calabiyau_session(SQLModel):
     session_acct_prune_index = SQLModel.Index(accttype, processed)
     session_nasid_index = SQLModel.Index(acctsessionid)
     session_nas_index = SQLModel.Index(nasipaddress)
-    session_user_ref = SQLModel.ForeignKey(user_id, calabiyau.id)
+    session_user_ref = SQLModel.ForeignKey(user_id, calabiyau_subscriber.id)

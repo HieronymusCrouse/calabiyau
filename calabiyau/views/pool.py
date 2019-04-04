@@ -27,14 +27,17 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
+from ipaddress import ip_network
+
+from luxon import db
 from luxon import register
 from luxon import router
-from luxon import MBClient
 from luxon.helpers.access import validate_access
 from luxon.helpers.api import sql_list, obj
-from pyipcalc import IPNetwork
 
-from subscriber.models.pool import subscriber_pool
+from calabiyau.models.pool import calabiyau_pool
+from calabiyau.helpers.pool import append as pool_append
+from calabiyau.helpers.pool import delete as pool_delete
 
 from luxon import GetLogger
 
@@ -63,65 +66,66 @@ class Pool(object):
                    tag='services')
 
     def pool(self, req, resp, id):
-        return obj(req, subscriber_pool, sql_id=id,
+        return obj(req, calabiyau_pool, sql_id=id,
                    hide=('password',))
 
     def pools(self, req, resp):
-        return sql_list(req, 'subscriber_pool',
+        return sql_list(req, 'calabiyau_pool',
                         ('id', 'pool_name',))
 
     def create(self, req, resp):
-        pool = obj(req, subscriber_pool)
+        pool = obj(req, calabiyau_pool)
         pool.commit()
         return pool
 
     def update(self, req, resp, id):
-        pool = obj(req, subscriber_pool, sql_id=id)
+        pool = obj(req, calabiyau_pool, sql_id=id)
         pool.commit()
         return pool
 
     def delete(self, req, resp, id):
-        pool = obj(req, subscriber_pool, sql_id=id)
+        pool = obj(req, calabiyau_pool, sql_id=id)
         pool.commit()
 
     def ips(self, req, resp, id):
-        pool = obj(req, subscriber_pool, sql_id=id)
-        return sql_list(req, 'subscriber_ippool',
-                        ('id',
-                         'framedipaddress',
-                         'nasipaddress',
-                         'expiry_time',
-                         'username',),
-                        where={'pool_name': pool['pool_name']})
+        pool = obj(req, calabiyau_pool, sql_id=id)
+
+        def get_username(user_id):
+            with db() as conn:
+                result = conn.execute('SELECT username FROM' +
+                                      ' calabiyau_subscriber' +
+                                      ' WHERE id = %s', user_id).fetchone()
+                if result:
+                    return result
+
+        # where={'pool_id': pool['id']},
+        return sql_list(req, 'calabiyau_ippool',
+                        fields=('id',
+                                'framedipaddress',
+                                'expiry_time',
+                                'user_id',),
+                        callbacks={'user_id': get_username})
 
     def add_prefix(self, req, resp, id):
-        pool = subscriber_pool()
+        pool = calabiyau_pool()
         pool.sql_id(id)
         validate_access(req, pool)
 
         if not req.json.get('prefix'):
             raise ValueError('Prefix Required')
 
-        prefix = IPNetwork(req.json['prefix']).prefix()
+        prefix = ip_network(req.json['prefix']).with_prefixlen
 
-        with MBClient('subscriber') as mb:
-            msg = {'id': pool['id'],
-                   'prefix': prefix,
-                   'domain': req.context_domain}
-            mb.send('append_pool', msg)
+        pool_append(id, prefix)
 
     def rm_prefix(self, req, resp, id):
-        pool = subscriber_pool()
+        pool = calabiyau_pool()
         pool.sql_id(id)
         validate_access(req, pool)
 
         if not req.json.get('prefix'):
             raise ValueError('Prefix Required')
 
-        prefix = IPNetwork(req.json['prefix']).prefix()
+        prefix = ip_network(req.json['prefix']).with_prefixlen
 
-        with MBClient('subscriber') as mb:
-            msg = {'id': pool['id'],
-                   'prefix': prefix,
-                   'domain': req.context_domain}
-            mb.send('delete_pool', msg)
+        pool_delete(id, prefix)

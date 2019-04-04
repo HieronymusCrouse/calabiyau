@@ -42,16 +42,16 @@ def get_user(db, nas_ip, username):
                      ' calabiyau_subscriber.package_id as package_id,' +
                      ' calabiyau_subscriber.ctx as ctx,' +
                      ' calabiyau_subscriber.static_ip4 as static_ip4,' +
+                     ' calabiyau_subscriber.volume_expire as volume_expire,' +
                      ' calabiyau_subscriber.volume_used_bytes' +
                      ' as volume_used_bytes,' +
                      ' calabiyau_subscriber.volume_used' +
                      ' as volume_used,' +
+                     ' calabiyau_subscriber.package_expire' +
+                     ' as package_expire,' +
                      ' calabiyau_package.plan as plan,' +
                      ' calabiyau_package.simultaneous as simultaneous,' +
                      ' calabiyau_package.pool_id as pool_id,' +
-                     ' calabiyau.volume_expire as volume_expire,' +
-                     ' calabiyau.package_expire' +
-                     ' as package_expire,' +
                      ' calabiyau_package.package_span as package_span,' +
                      ' calabiyau_package.volume_gb as volume_gb,' +
                      ' calabiyau_package.volume_span as volume_span,' +
@@ -61,7 +61,7 @@ def get_user(db, nas_ip, username):
                      ' calabiyau_nas.nas_type as nas_type,' +
                      ' calabiyau_nas.secret as nas_secret,' +
                      ' calabiyau_subscriber.enabled as enabled' +
-                     ' FROM subscriber_package' +
+                     ' FROM calabiyau_package' +
                      ' INNER JOIN calabiyau_subscriber' +
                      ' ON calabiyau_subscriber.package_id' +
                      ' = calabiyau_package.id' +
@@ -92,6 +92,9 @@ def parse_fr(fr):
 
 def update_ip(db, user, fr):
     with db.cursor() as crsr:
+        if 'Framed-IP-Address' not in fr:
+            return None
+
         crsr.execute('SELECT id FROM calabiyau_ippool' +
                      ' WHERE pool_id = %s AND' +
                      ' framedipaddress = %s' +

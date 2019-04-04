@@ -30,7 +30,7 @@
 from luxon import Model
 from luxon.utils.timezone import now
 
-from subscriber.ui.helpers.package import package
+from calabiyau.ui.helpers.package import package
 
 
 class subscriber(Model):

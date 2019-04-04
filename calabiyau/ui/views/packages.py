@@ -39,7 +39,7 @@ from calabiyau.lib.ctx import ctx
 from calabiyau.ui.models.packages import package
 
 g.nav_menu.add('/Infrastructure/Subscriber/Packages',
-               href='/infrastructure/calabiyau/packages',
+               href='/infrastructure/subscriber/packages',
                tag='services',
                feather='package')
 
@@ -48,37 +48,37 @@ g.nav_menu.add('/Infrastructure/Subscriber/Packages',
 class Packages():
     def __init__(self):
         router.add('GET',
-                   '/infrastructure/calabiyau/packages',
+                   '/infrastructure/subscriber/packages',
                    self.list,
                    tag='services')
 
         router.add('GET',
-                   '/infrastructure/calabiyau/package/{id}',
+                   '/infrastructure/subscriber/package/{id}',
                    self.view,
                    tag='services')
 
         router.add('GET',
-                   '/infrastructure/calabiyau/package/delete/{id}',
+                   '/infrastructure/subscriber/package/delete/{id}',
                    self.delete,
                    tag='services')
 
         router.add(('GET', 'POST',),
-                   '/infrastructure/calabiyau/package/add',
+                   '/infrastructure/subscriber/package/add',
                    self.add,
                    tag='services')
 
         router.add(('GET', 'POST',),
-                   '/infrastructure/calabiyau/package/edit/{id}',
+                   '/infrastructure/subscriber/package/edit/{id}',
                    self.edit,
                    tag='services')
 
         router.add('POST',
-                   '/infrastructure/calabiyau/package/add_attr/{id}',
+                   '/infrastructure/subscriber/package/add_attr/{id}',
                    self.add_attr,
                    tag='services')
 
         router.add('GET',
-                   '/infrastructure/calabiyau/package/rm_attr/{id}',
+                   '/infrastructure/subscriber/package/rm_attr/{id}',
                    self.rm_attr,
                    tag='services')
 
@@ -88,11 +88,11 @@ class Packages():
 
     def delete(self, req, resp, id):
         req.context.api.execute('DELETE', '/v1/package/%s' % id,
-                                endpoint='calabiyau')
+                                endpoint='subscriber')
 
     def view(self, req, resp, id):
         vr = req.context.api.execute('GET', '/v1/package/%s' % id,
-                                     endpoint='calabiyau')
+                                     endpoint='subscriber')
         html_form = form(package, vr.json, readonly=True)
         return render_template('calabiyau.ui/packages/view.html',
                                view='View Subscriber Package',
@@ -103,12 +103,12 @@ class Packages():
         if req.method == 'POST':
             req.context.api.execute('PUT', '/v1/package/%s' % id,
                                     data=req.form_dict,
-                                    endpoint='calabiyau')
+                                    endpoint='subscriber')
             return self.view(req, resp, id)
         else:
             response = req.context.api.execute('GET', '/v1/package/%s'
                                                % id,
-                                               endpoint='calabiyau')
+                                               endpoint='subscriber')
             html_form = form(package, response.json)
             return render_template('calabiyau.ui/packages/edit.html',
                                    view='Edit Subscriber Package',
@@ -123,7 +123,7 @@ class Packages():
             response = req.context.api.execute('POST',
                                                '/v1/package',
                                                data=req.form_dict,
-                                               endpoint='calabiyau')
+                                               endpoint='subscriber')
             return self.view(req, resp, response.json['id'])
         else:
             html_form = form(package)
@@ -137,8 +137,8 @@ class Packages():
         uri = '/v1/package/%s/attrs' % id
 
         req.context.api.execute('POST', uri, data=data,
-                                endpoint='calabiyau')
+                                endpoint='subscriber')
 
     def rm_attr(self, req, resp, id):
         uri = '/v1/package/%s/attrs' % id
-        req.context.api.execute('DELETE', uri, endpoint='calabiyau')
+        req.context.api.execute('DELETE', uri, endpoint='subscriber')

@@ -37,7 +37,7 @@ from calabiyau.ui.models.virtual import virtual
 from calabiyau.lib.vendor import vendors
 
 g.nav_menu.add('/Infrastructure/Subscriber/Virtual',
-               href='/infrastructure/calabiyau/virtual',
+               href='/infrastructure/subscriber/virtual',
                tag='infrastructure:admin',
                feather='at-sign')
 
@@ -46,42 +46,42 @@ g.nav_menu.add('/Infrastructure/Subscriber/Virtual',
 class Virtual():
     def __init__(self):
         router.add('GET',
-                   '/infrastructure/calabiyau/virtual',
+                   '/infrastructure/subscriber/virtual',
                    self.list,
                    tag='infrastructure:admin')
 
         router.add('GET',
-                   '/infrastructure/calabiyau/virtual/{id}',
+                   '/infrastructure/subscriber/virtual/{id}',
                    self.view,
                    tag='infrastructure:admin')
 
         router.add('GET',
-                   '/infrastructure/calabiyau/virtual/delete/{id}',
+                   '/infrastructure/subscriber/virtual/delete/{id}',
                    self.delete,
                    tag='infrastructure:admin')
 
         router.add(('GET', 'POST',),
-                   '/infrastructure/calabiyau/virtual/add',
+                   '/infrastructure/subscriber/virtual/add',
                    self.add,
                    tag='infrastructure:admin')
 
         router.add(('GET', 'POST',),
-                   '/infrastructure/calabiyau/virtual/edit/{id}',
+                   '/infrastructure/subscriber/virtual/edit/{id}',
                    self.edit,
                    tag='infrastructure:admin')
 
         router.add('POST',
-                   '/infrastructure/calabiyau/virtual/add_nas/{id}',
+                   '/infrastructure/subscriber/virtual/add_nas/{id}',
                    self.add_nas,
                    tag='infrastructure:admin')
 
         router.add('GET',
-                   '/infrastructure/calabiyau/virtual/rm_nas/{id}',
+                   '/infrastructure/subscriber/virtual/rm_nas/{id}',
                    self.rm_nas,
                    tag='infrastructure:admin')
 
         router.add('GET',
-                   '/infrastructure/calabiyau/virtual/clear/{id}',
+                   '/infrastructure/subscriber/virtual/clear/{id}',
                    self.clear,
                    tag='infrastructure:admin')
 
@@ -91,11 +91,11 @@ class Virtual():
 
     def delete(self, req, resp, id):
         req.context.api.execute('DELETE', '/v1/virtual/%s' % id,
-                                endpoint='calabiyau')
+                                endpoint='subscriber')
 
     def view(self, req, resp, id):
         vr = req.context.api.execute('GET', '/v1/virtual/%s' % id,
-                                     endpoint='calabiyau')
+                                     endpoint='subscriber')
         html_form = form(virtual, vr.json, readonly=True)
         return render_template('calabiyau.ui/virtual/view.html',
                                view='View Virtual Authentication Service',
@@ -106,12 +106,12 @@ class Virtual():
         if req.method == 'POST':
             req.context.api.execute('PUT', '/v1/virtual/%s' % id,
                                     data=req.form_dict,
-                                    endpoint='calabiyau')
+                                    endpoint='subscriber')
             return self.view(req, resp, id)
         else:
             response = req.context.api.execute('GET', '/v1/virtual/%s'
                                                % id,
-                                               endpoint='calabiyau')
+                                               endpoint='subscriber')
             html_form = form(virtual, response.json)
             return render_template('calabiyau.ui/virtual/edit.html',
                                    name=response.json['name'],
@@ -124,7 +124,7 @@ class Virtual():
         if req.method == 'POST':
             response = req.context.api.execute('POST', '/v1/virtual',
                                                data=req.form_dict,
-                                               endpoint='calabiyau')
+                                               endpoint='subscriber')
             return self.view(req, resp, response.json['id'])
         else:
             html_form = form(virtual)
@@ -138,12 +138,12 @@ class Virtual():
         uri = '/v1/virtual/%s/nas' % id
 
         req.context.api.execute('POST', uri, data=data,
-                                endpoint='calabiyau')
+                                endpoint='subscriber')
 
     def rm_nas(self, req, resp, id):
         uri = '/v1/virtual/%s/nas' % id
-        req.context.api.execute('DELETE', uri, endpoint='calabiyau')
+        req.context.api.execute('DELETE', uri, endpoint='subscriber')
 
     def clear(self, req, resp, id):
         uri = '/v1/clear/%s' % id
-        req.context.api.execute('PUT', uri, endpoint='calabiyau')
+        req.context.api.execute('PUT', uri, endpoint='subscriber')

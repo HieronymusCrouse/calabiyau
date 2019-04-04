@@ -57,6 +57,6 @@ def calc_next_expire(metric, span, expired=None):
 
 def get_package(package_id):
     with db() as conn:
-        query = 'SELECT * FROM subscriber_package where id = %s'
+        query = 'SELECT * FROM calabiyau_package where id = %s'
         crsr = conn.execute(query, package_id)
         return crsr.fetchone()

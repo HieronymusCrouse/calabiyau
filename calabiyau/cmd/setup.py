@@ -51,6 +51,10 @@ def setup(req, resp):
                 '/etc/tachyonic/freeradius/clients',
                 'default')
 
+    module.copy('config/freeradius/log.conf',
+                '/etc/tachyonic/freeradius/log.conf',
+                'default')
+
     module.copy('config/freeradius/dictionary',
                 '/etc/tachyonic/freeradius/dictionary')
 
@@ -81,7 +85,3 @@ def setup(req, resp):
 
     module.copy('config/freeradius/sites',
                 '/etc/tachyonic/freeradius/sites')
-
-    module.copy('config/calabiyau.ini',
-                '/etc/tachyonic/calabiyau.ini',
-                'default')

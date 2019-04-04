@@ -28,6 +28,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
 import time
+from ipaddress import ip_network
 from multiprocessing import Process, cpu_count
 
 from luxon import register
@@ -36,8 +37,8 @@ from luxon import MPLogger
 from luxon import GetLogger
 from luxon import dbw
 from luxon.utils.mysql import retry
+from luxon.utils.daemon import GracefulKiller
 from luxon.exceptions import SQLIntegrityError
-#from pyipcalc import IPNetwork
 
 from calabiyau.msgbus.radius.acct import acct as radius_acct
 
@@ -62,17 +63,17 @@ def purge_sessions():
 def append_pool(msg):
     log = MPLogger(__name__)
 
-    pool_id = msg['id']
+    pool_id = msg['pool_id']
     prefix = msg['prefix']
     with dbw() as conn:
         with conn.cursor() as crsr:
-            for ip in IPNetwork(prefix):
+            for ip in ip_network(prefix):
                 try:
                     crsr.execute('INSERT INTO calabiyau_ippool' +
                                  ' (id, pool_id, framedipaddress)' +
                                  ' VALUES' +
-                                 ' (uuid()), %s, %s)',
-                                 (pool_id, ip.first(),))
+                                 ' (uuid(), %s, %s)',
+                                 (pool_id, str(ip),))
                 except SQLIntegrityError as e:
                     log.warning(e)
             crsr.commit()
@@ -82,19 +83,34 @@ def append_pool(msg):
 def delete_pool(msg):
     log = MPLogger(__name__)
 
-    pool_id = msg['id']
+    pool_id = msg['pool_id']
     prefix = msg['prefix']
     with dbw() as conn:
         with conn.cursor() as crsr:
-            for ip in IPNetwork(prefix):
+            for ip in ip_network(prefix):
                 try:
-                    conn.execute('DELETE FROM calabiyau_ippool' +
+                    crsr.execute('DELETE FROM calabiyau_ippool' +
                                  ' WHERE pool_id = %s' +
                                  ' and framedipaddress = %s',
-                                 (pool_id, ip.first(),))
+                                 (pool_id, str(ip),))
                 except SQLIntegrityError as e:
                     log.warning(e)
             crsr.commit()
+
+
+def clear_nas_sessions(msg):
+    log = MPLogger(__name__)
+    nas = msg['nas_id']
+
+
+def disconnect_session(msg):
+    log = MPLogger(__name__)
+    session_id = msg['session_id']
+
+
+def disconnect_user(msg):
+    log = MPLogger(__name__)
+    session_id = msg['session_id']
 
 
 @register.resource('system', '/manager')
@@ -104,7 +120,7 @@ def manager(req, resp):
         mplog = MPLogger('__main__')
         mplog.receive()
 
-        mb = MBServer('calabiyau',
+        mb = MBServer('subscriber',
                       {'radius_accounting': radius_acct,
                        'append_pool': append_pool,
                        'delete_pool': delete_pool},
@@ -120,27 +136,33 @@ def manager(req, resp):
         for proc, target in procs:
             proc.start()
 
-        while True:
-            mb.check()
-            for process in procs:
-                proc, target = process
-                if not proc.is_alive():
-                    proc.join()
-                    procs.remove(process)
-                    new = Process(target=target,
-                                  name=proc.name,)
-                    log.critical('Restarting process %s' % proc.name)
-                    procs.append((new, target,))
-                    new.start()
-            time.sleep(10)
+        def end(sig):
+            for proc, target in procs:
+                proc.terminate()
 
-        mplog.close()
-        mb.stop()
+            mb.stop()
+            mplog.close()
+            exit()
+
+        sig = GracefulKiller(end)
+
+        while True:
+            if not sig.killed:
+                mb.check()
+                for process in procs:
+                    proc, target = process
+                    if not proc.is_alive():
+                        proc.join()
+                        procs.remove(process)
+                        new = Process(target=target,
+                                      name=proc.name,)
+                        log.critical('Restarting process %s' % proc.name)
+                        procs.append((new, target,))
+                        new.start()
+                time.sleep(10)
+
+        if not sig.killed:
+            end(None)
 
     except (KeyboardInterrupt, SystemExit):
-        for proc, target in procs:
-            proc.terminate()
-
-        mb.stop()
-
-        mplog.close()
+        end(None)
