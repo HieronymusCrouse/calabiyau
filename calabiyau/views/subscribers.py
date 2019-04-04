@@ -62,8 +62,14 @@ class Users(object):
                    hide=('password',))
 
     def users(self, req, resp):
-        return sql_list(req, 'calabiyau_subscriber',
-                        ('id', 'username', 'name',),)
+        return sql_list(req,
+                        'calabiyau_subscriber',
+                        fields = ('id',
+                                  'username',
+                                  'name',),
+                        search = {'id': str,
+                                  'username': str,
+                                  'name': str})
 
     def pkg_set(self, req, user):
         if req.json.get('package_id'):
