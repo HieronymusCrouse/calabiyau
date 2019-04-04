@@ -70,8 +70,12 @@ class Pool(object):
                    hide=('password',))
 
     def pools(self, req, resp):
-        return sql_list(req, 'calabiyau_pool',
-                        ('id', 'pool_name',))
+        return sql_list(req,
+                        'calabiyau_pool',
+                        fields = ('id',
+                                  'pool_name',),
+                        search = {'id': str,
+                                  'pool_name': str})
 
     def create(self, req, resp):
         pool = obj(req, calabiyau_pool)
@@ -99,11 +103,16 @@ class Pool(object):
                     return result
 
         # where={'pool_id': pool['id']},
-        return sql_list(req, 'calabiyau_ippool',
-                        fields=('id',
-                                'framedipaddress',
-                                'expiry_time',
-                                'user_id',),
+        return sql_list(req,
+                        'calabiyau_ippool',
+                        fields = ('id',
+                                  'framedipaddress',
+                                  'expiry_time',
+                                  'user_id',),
+                        search = {'id': str,
+                                  'framedipaddress': str,
+                                  'expiry_time': str,
+                                  'user_id': str},
                         callbacks={'user_id': get_username})
 
     def add_prefix(self, req, resp, id):

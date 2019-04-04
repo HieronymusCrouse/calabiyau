@@ -30,6 +30,7 @@
 from luxon import register
 from luxon import router
 from luxon.helpers.api import sql_list, obj
+from luxon.utils import sql
 
 from calabiyau.models.virtual import calabiyau_virtual
 from calabiyau.models.nas import calabiyau_nas
@@ -66,8 +67,14 @@ class Virtual(object):
                    hide=('password',))
 
     def virtuals(self, req, resp):
-        return sql_list(req, 'calabiyau_virtual',
-                        ('id', 'domain', 'name',))
+        return sql_list(req,
+                        'calabiyau_virtual',
+                        fields = ('id',
+                                  'domain',
+                                  'name',),
+                        search = {'id': str,
+                                  'domain': str,
+                                  'name': str,})
 
     def create(self, req, resp):
         virtual = obj(req, calabiyau_virtual)
@@ -84,10 +91,22 @@ class Virtual(object):
         virtual.commit()
 
     def nas(self, req, resp, id):
-        where = {'virtual_id': id}
-        return sql_list(req, 'calabiyau_nas',
-                        ('id', 'name', 'server',
-                         'nas_type', 'secret'), where=where)
+        f_virtual_id = sql.Field('calabiyau_nas.virtual_id')
+        w_virtual_id = f_virtual_id == sql.Value(id)
+        select = sql.Select('calabiyau_nas')
+        select.where = w_virtual_id
+        return sql_list(req,
+                        select,
+                        fields = ('id',
+                                  'name',
+                                  'server',
+                                  'nas_type',
+                                  'secret'),
+                        search = {'id': str,
+                                'name': str,
+                                'server': str,
+                                'nas_type': str,
+                                'secret': str})
 
     def add_nas(self, req, resp, id):
         virtual = obj(req, calabiyau_nas)
