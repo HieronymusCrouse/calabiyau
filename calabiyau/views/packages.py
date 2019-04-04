@@ -31,6 +31,7 @@
 from luxon import register
 from luxon import router
 from luxon.helpers.api import sql_list, obj
+from luxon.utils import sql
 
 from calabiyau.models.packages import calabiyau_package
 from calabiyau.models.package_attrs import calabiyau_package_attr
@@ -60,7 +61,11 @@ class Groups(object):
         return obj(req, calabiyau_package, sql_id=id)
 
     def packages(self, req, resp):
-        return sql_list(req, 'calabiyau_package', ('id', 'name', ))
+        return sql_list(req,
+                        'calabiyau_package',
+                        fields = ('id', 'name', ),
+                        search = {'id': str,
+                                  'name': str })
 
     def create(self, req, resp):
         package = obj(req, calabiyau_package)
@@ -78,10 +83,21 @@ class Groups(object):
         return package
 
     def attrs(self, req, resp, id):
-        where = {'package_id': id}
-        return sql_list(req, 'calabiyau_package_attr',
-                        ('id', 'attribute', 'value', 'ctx', 'nas_type'),
-                        where=where)
+        f_package_id = sql.Field('calabiyau_package_attr.package_id')
+        w_package_id = f_package_id == sql.Value(id)
+        select = sql.Select('calabiyau_package_attr')
+        select.where = w_package_id
+        return sql_list(req, select,
+                        fields = ('id',
+                                  'attribute',
+                                  'value',
+                                  'ctx',
+                                  'nas_type'),
+                        search = {'id': str,
+                                  'attribute': str,
+                                  'value': str,
+                                  'ctx': str,
+                                  'nas_type': str})
 
     def add_attr(self, req, resp, id):
         attr = obj(req, calabiyau_package_attr)
