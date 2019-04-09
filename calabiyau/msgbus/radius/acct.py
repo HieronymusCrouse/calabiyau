@@ -48,6 +48,7 @@ log = GetLogger(__name__)
 @retry()
 def do_acct(db, fr, dt, user, status):
     user_id = user['id']
+    username = user['username']
     nas_session_id = fr['Acct-Session-Id']
     unique_session_id = fr['Acct-Unique-Session-Id']
     input_octets = int(fr.get('Acct-Input-Octets64', 0))
@@ -96,6 +97,7 @@ def do_acct(db, fr, dt, user, status):
             crsr.execute("INSERT INTO calabiyau_session" +
                          " (id," +
                          " user_id," +
+                         " username," +
                          " acctsessionid," +
                          " acctuniqueid," +
                          " nasipaddress," +
@@ -114,11 +116,12 @@ def do_acct(db, fr, dt, user, status):
                          " processed," +
                          " accttype)" +
                          " VALUES" +
-                         " (uuid(), %s, %s, %s, %s, %s, %s, %s, %s," +
-                         " %s, %s, %s, %s, %s, %s, %s, %s, now(), %s)" +
+                         " (uuid(), %s, %s, %s, %s, INET6_ATON(%s), %s, %s," +
+                         " %s, %s, %s, %s, %s, INET6_ATON(%s), %s, %s," +
+                         " %s, %s, now(), %s)" +
                          " ON DUPLICATE KEY UPDATE" +
                          " acctsessionid = %s," +
-                         " nasipaddress = %s," +
+                         " nasipaddress = INET6_ATON(%s)," +
                          " nasportid = %s," +
                          " nasport = %s," +
                          " nasporttype = %s," +
@@ -126,13 +129,14 @@ def do_acct(db, fr, dt, user, status):
                          " callingstationid = %s," +
                          " servicetype = %s," +
                          " framedprotocol = %s," +
-                         " framedipaddress = %s," +
+                         " framedipaddress = INET6_ATON(%s)," +
                          " acctinputoctets = %s," +
                          " acctoutputoctets = %s," +
                          " acctupdated = %s," +
                          " processed = now()," +
                          " accttype = %s",
                          (user_id,
+                          username,
                           nas_session_id,
                           unique_session_id,
                           fr['NAS-IP-Address'],

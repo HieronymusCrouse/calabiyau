@@ -48,7 +48,7 @@ class calabiyau_subscriber(SQLModel):
     phone_mobile = SQLModel.Phone()
     phone_office = SQLModel.Phone()
     designation = SQLModel.Enum('', 'Mr', 'Mrs', 'Ms', 'Dr', 'Prof')
-    static_ip4 = SQLModel.String(null=True, max_length=64)
+    static_ip4 = SQLModel.Ip4(null=True)
     ctx = SQLModel.SmallInt(null=False, default=0)
     notified = SQLModel.Boolean(null=False, default=True)
     enabled = SQLModel.Boolean(default=True)

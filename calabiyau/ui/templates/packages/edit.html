@@ -1,7 +1,7 @@
 {% extends "photonic/view.html" %}
 
 {% block content %}
-    <form id="form" method='post' enctype="multipart/form-data">
+    <form id="form" data-no-submit method='post' enctype="multipart/form-data">
         {{ form }}
     </form>
 <table class="display" data-endpoint='subscriber' data-url="/v1/package/{{id}}/attrs" width="100%">
@@ -11,12 +11,12 @@
             <th id='value'>Value</th>
             <th id='ctx'>Context</th>
             <th id='nas_type'>Vendor</th>
-            <th data-confirm="Delete Attribute Value Pair?" data-href="/infrastructure/subscriber/package/rm_attr" data-close-window width="2rem">
+            <th data-confirm="Delete Attribute Value Pair?" data-href="/infrastructure/subscriber/package/rm_attr" data-table data-close-window width="2rem">
                 <span data-feather="minus-square"></span>
         </tr>
     </thead>
 </table>
- <form class="row" autocomplete="off" data-msg="Succesfully added AVP" data-datatable action="{{APP}}/infrastructure/subscriber/package/add_attr/{{id}}" enctype="multipart/form-data" class="row">
+ <form class="row" autocomplete="off" data-msg="Succesfully added AVP" data-table action="{{APP}}/infrastructure/subscriber/package/add_attr/{{id}}" enctype="multipart/form-data" class="row">
 	 <div class="col-sm-3">
 		 <select name="attribute" class="form-control" data-endpoint="subscriber" data-url="/v1/radius/avps">
 		</select>
@@ -44,6 +44,6 @@
 
 {% block buttons %}
     <a href="{{ APP }}/infrastructure/subscriber/package/{{id}}" class="btn btn-default">Cancel</a>
-    <a data-confirm="Remove subscriber package {{name}}?" data-close-windows="2" href="{{ APP }}/infrastructure/subscriber/package/delete/{{id}}" class="btn btn-danger">Remove</a>
+    <a data-confirm="Remove subscriber package {{name}}?" data-table data-close-windows="2" href="{{ APP }}/infrastructure/subscriber/package/delete/{{id}}" class="btn btn-danger">Remove</a>
     <a href="{{ APP }}/infrastructure/subscriber/package/edit/{{id}}" data-form="form" class="btn btn-primary">Save</a>
 {% endblock %}

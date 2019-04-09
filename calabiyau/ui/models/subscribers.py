@@ -45,4 +45,5 @@ class subscriber(Model):
     enabled = Model.Boolean(default=True)
     package_expire = Model.DateTime(null=True)
     volume_expire = Model.DateTime(null=True)
+    static_ip4 = Model.Ip4(null=True)
     creation_time = Model.DateTime(default=now, readonly=True)

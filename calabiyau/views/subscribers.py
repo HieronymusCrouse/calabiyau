@@ -29,12 +29,11 @@
 # THE POSSIBILITY OF SUCH DAMAGE.
 from luxon import register
 from luxon import router
-from luxon.helpers.api import raw_list, sql_list, obj
+from luxon.helpers.api import sql_list, obj
 from luxon.utils.hashing import md5sum
+from luxon import MBClient
 
-from calabiyau.lib.radius.avps import avps
 from calabiyau.models.subscribers import calabiyau_subscriber
-from calabiyau.helpers.sessions import disconnect_user
 from calabiyau.helpers.packages import get_package, calc_next_expire
 
 from luxon import GetLogger
@@ -64,12 +63,12 @@ class Users(object):
     def users(self, req, resp):
         return sql_list(req,
                         'calabiyau_subscriber',
-                        fields = ('id',
-                                  'username',
-                                  'name',),
-                        search = {'id': str,
-                                  'username': str,
-                                  'name': str})
+                        fields=('id',
+                                'username',
+                                'name',),
+                        search={'id': str,
+                                'username': str,
+                                'name': str})
 
     def pkg_set(self, req, user):
         if req.json.get('package_id'):
@@ -116,17 +115,17 @@ class Users(object):
 
         self.pkg_set(req, user)
 
-        if req.json.get('enabled'):
-            if user['enabled'] is False:
-                pass
-                #disconnect_user(user['virtual_id'],
-                #                user['username'])
+        if req.json.get('enabled') and user['enabled'] is False:
+            with MBClient('subscriber') as mb:
+                mb.send('disconnect_user', {'user_id': user['id'],
+                                            'username': user['username']})
 
         user.commit()
         return user
 
     def delete(self, req, resp, id):
         user = obj(req, calabiyau_subscriber, sql_id=id)
-        #disconnect_user(user['virtual_id'],
-        #                user['username'])
+        with MBClient('subscriber') as mb:
+            mb.send('disconnect_user', {'user_id': user['id'],
+                                        'username': user['username']})
         user.commit()

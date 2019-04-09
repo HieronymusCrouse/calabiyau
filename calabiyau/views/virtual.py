@@ -69,12 +69,12 @@ class Virtual(object):
     def virtuals(self, req, resp):
         return sql_list(req,
                         'calabiyau_virtual',
-                        fields = ('id',
-                                  'domain',
-                                  'name',),
-                        search = {'id': str,
-                                  'domain': str,
-                                  'name': str,})
+                        fields=('id',
+                                'domain',
+                                'name',),
+                        search={'id': str,
+                                'domain': str,
+                                'name': str})
 
     def create(self, req, resp):
         virtual = obj(req, calabiyau_virtual)
@@ -97,16 +97,21 @@ class Virtual(object):
         select.where = w_virtual_id
         return sql_list(req,
                         select,
-                        fields = ('id',
-                                  'name',
-                                  'server',
-                                  'nas_type',
-                                  'secret'),
-                        search = {'id': str,
+                        fields=('id',
+                                'name',
+                                'INET6_NTOA(server)',
+                                'nas_type',
+                                'secret',),
+                        search={'id': str,
                                 'name': str,
-                                'server': str,
+                                'server': 'ip',
                                 'nas_type': str,
-                                'secret': str})
+                                'secret': str},
+                        order=('calabiyau_nas.name',
+                               'calabiyau_nas.server',
+                               'calabiyau_nas.nas_type',
+                               'calabiyau_nas.secret',))
+
 
     def add_nas(self, req, resp, id):
         virtual = obj(req, calabiyau_nas)

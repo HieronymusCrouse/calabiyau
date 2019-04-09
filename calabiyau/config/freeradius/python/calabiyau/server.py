@@ -115,6 +115,7 @@ def authorize(fr):
                                         user['pool_id'],))
                             return radiusd.RLM_MODULE_REJECT
                 else:
+                    log.auth('User not found (%s)' % fr['User-Name'])
                     return radiusd.RLM_MODULE_NOTFOUND
 
             return (radiusd.RLM_MODULE_NOTFOUND,
