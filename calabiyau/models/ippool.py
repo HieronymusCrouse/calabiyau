@@ -40,7 +40,7 @@ class calabiyau_ippool(SQLModel):
     id = SQLModel.Uuid(default=uuid4, internal=True)
     pool_id = SQLModel.Uuid(null=False)
     user_id = SQLModel.Uuid(null=False, default='')
-    framedipaddress = SQLModel.String(max_length=40, default='', null=False)
+    framedipaddress = SQLModel.Ip4(null=False)
     expiry_time = SQLModel.DateTime(null=True, default=None)
     primary_key = id
     ippool_user_index = SQLModel.Index(user_id, expiry_time)

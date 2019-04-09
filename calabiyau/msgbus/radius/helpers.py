@@ -41,7 +41,8 @@ def get_user(db, nas_ip, username):
                      ' calabiyau_subscriber.password as password,' +
                      ' calabiyau_subscriber.package_id as package_id,' +
                      ' calabiyau_subscriber.ctx as ctx,' +
-                     ' calabiyau_subscriber.static_ip4 as static_ip4,' +
+                     ' INET6_NTOA(calabiyau_subscriber.static_ip4)' +
+                     ' as static_ip4,' +
                      ' calabiyau_subscriber.volume_expire as volume_expire,' +
                      ' calabiyau_subscriber.volume_used_bytes' +
                      ' as volume_used_bytes,' +
@@ -68,7 +69,7 @@ def get_user(db, nas_ip, username):
                      ' INNER JOIN calabiyau_nas' +
                      ' ON calabiyau_package.virtual_id' +
                      ' = calabiyau_nas.virtual_id' +
-                     ' WHERE calabiyau_nas.server = %s' +
+                     ' WHERE calabiyau_nas.server = INET6_ATON(%s)' +
                      ' AND calabiyau_subscriber.username = %s',
                      (nas_ip,
                       username,))
@@ -97,7 +98,7 @@ def update_ip(db, user, fr):
 
         crsr.execute('SELECT id FROM calabiyau_ippool' +
                      ' WHERE pool_id = %s AND' +
-                     ' framedipaddress = %s' +
+                     ' framedipaddress = INET6_ATON(%s)' +
                      ' FOR UPDATE',
                      (user['pool_id'], fr['Framed-IP-Address'],))
 
@@ -107,14 +108,14 @@ def update_ip(db, user, fr):
                          ' expiry_time = NOW() +' +
                          ' INTERVAL 86400 SECOND' +
                          ' WHERE pool_id = %s AND' +
-                         ' framedipaddress = %s AND' +
+                         ' framedipaddress = INET6_ATON(%s) AND' +
                          ' expiry_time is not NULL',
                          (user['pool_id'], fr['Framed-IP-Address'],))
         elif fr['Acct-Status-Type'] == 'Stop':
             crsr.execute('UPDATE calabiyau_ippool SET' +
                          ' expiry_time = NULL' +
                          ' WHERE pool_id = %s AND' +
-                         ' framedipaddress = %s',
+                         ' framedipaddress = INET6_ATON(%s)',
                          (user['pool_id'], fr['Framed-IP-Address'],))
 
         crsr.commit()

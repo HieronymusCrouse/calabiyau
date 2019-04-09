@@ -45,7 +45,7 @@ class calabiyau_nas(SQLModel):
     nas_type = SQLModel.Word(max_length=64, upper=True, null=False,
                              regex=r'^[a-z0-9\._-]+$')
     secret = SQLModel.String(max_length=64, null=False)
-    server = SQLModel.String(max_length=64, null=False)
+    server = SQLModel.Ip4(null=False)
     description = SQLModel.Text()
     creation_time = SQLModel.DateTime(default=now, readonly=True)
     nas_virtual_ref = SQLModel.ForeignKey(virtual_id, calabiyau_virtual.id)

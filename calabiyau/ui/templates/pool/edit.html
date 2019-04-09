@@ -1,7 +1,7 @@
 {% extends "photonic/view.html" %}
 
 {% block content %}
-    <form id="form" method='post' enctype="multipart/form-data">
+    <form id="form" data-no-submit method='post' enctype="multipart/form-data">
         {{ form }}
     </form>
 <table class="display" data-endpoint='subscriber' data-url="/v1/pool/{{id}}/ips" width="100%">
@@ -9,11 +9,11 @@
         <tr>
             <th id='framedipaddress'>IP</th>
             <th id='expiry_time'>Expiry</th>
-            <th id='username' data-no-search data-no-order>Username</th>
+            <th id='username'>Username</th>
         </tr>
     </thead>
 </table>
-<form autocomplete="off" data-msg="Radius IP Pool job requested." data-datatable action="{{APP}}/infrastructure/subscriber/pool/request/{{id}}" enctype="multipart/form-data" class="row">
+<form autocomplete="off" data-msg="Radius IP Pool job requested." data-table action="{{APP}}/infrastructure/subscriber/pool/request/{{id}}" enctype="multipart/form-data" class="row">
      <div class="col-sm-3">
         <input type="text" name="prefix" placeholder="192.168.0.0/16" class="form-control">
      </div> 
@@ -31,6 +31,6 @@
 
 {% block buttons %}
     <a href="{{ APP }}/infrastructure/subscriber/pool/{{id}}" class="btn btn-default">Cancel</a>
-    <a data-confirm="Remove IP Pool {{name}}?" data-close-windows="2" href="{{ APP }}/infrastructure/subscriber/pool/delete/{{id}}" class="btn btn-danger">Remove</a>
+    <a data-confirm="Remove IP Pool {{name}}?" data-table data-close-windows="2" href="{{ APP }}/infrastructure/subscriber/pool/delete/{{id}}" class="btn btn-danger">Remove</a>
     <a href="{{ APP }}/infrastructure/subscriber/pool/edit/{{id}}" data-form="form" class="btn btn-primary">Save</a>
 {% endblock %}

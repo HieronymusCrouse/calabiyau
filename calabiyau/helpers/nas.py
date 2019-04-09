@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2018-2019 Christiaan Frans Rademan.
+# Copyright (c) 2019 Christiaan Frans Rademan.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,41 +27,25 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
-from luxon import register
-from luxon import router
-from luxon.helpers.api import obj, raw_list, search_params
 
-from subscriber.helpers.accounting import get_cdr
-from subscriber.models.accounting import subscriber_accounting
+from luxon import db
+from luxon.utils.sql import build_where
 
 
-@register.resources()
-class Accounting(object):
-    def __init__(self):
-        # Services Users
-        router.add('GET', '/v1/accounting', self.accounting,
-                   tag='services:view')
-        router.add('GET', '/v1/accounting/{id}', self.cdr,
-                   tag='services:view')
+def get_nas_secret(nas):
+    with db() as conn:
+        result = conn.execute('SELECT secret FROM calabiyau_nas' +
+                              ' WHERE server = INET6_ATON(%s)',
+                              nas).fetchone()
+        if result:
+            return result['secret']
+        else:
+            return None
 
-    def accounting(self, req, resp):
-        limit = int(req.query_params.get('limit', 10))
-        page = int(req.query_params.get('page', 1))
-
-        tenant_id = req.context_tenant_id
-        domain = req.context_domain
-
-        search = {}
-        for field, value in search_params(req):
-            search['subscriber_accounting.' + field] = value
-
-        results = get_cdr(tenant_id=tenant_id,
-                          domain=domain,
-                          page=page,
-                          limit=limit * 2,
-                          search=search)
-
-        return raw_list(req, results, limit=limit, context=False, sql=True)
-
-    def cdr(self, req, resp, id):
-        return obj(req, subscriber_accounting, sql_id=id)
+def clear(nas_id):
+    with db() as conn:
+        result = conn.execute('SELECT * FROM calabiyau_nas' +
+                              ' WHERE id = %s', nas_id).fetchone()
+        if result:
+            server = result['server']
+            pass

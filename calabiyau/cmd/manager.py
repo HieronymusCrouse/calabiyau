@@ -35,12 +35,16 @@ from luxon import register
 from luxon import MBServer
 from luxon import MPLogger
 from luxon import GetLogger
-from luxon import dbw
+from luxon import db, dbw
 from luxon.utils.mysql import retry
 from luxon.utils.daemon import GracefulKiller
 from luxon.exceptions import SQLIntegrityError
 
 from calabiyau.msgbus.radius.acct import acct as radius_acct
+from calabiyau.helpers.nas import get_nas_secret
+from calabiyau.helpers.users import get_username
+from calabiyau.utils.radius import pod
+
 
 log = GetLogger(__name__)
 
@@ -62,55 +66,175 @@ def purge_sessions():
 @retry()
 def append_pool(msg):
     log = MPLogger(__name__)
-
-    pool_id = msg['pool_id']
+    pool_id = msg['pool_id'].replace(' ', '')
     prefix = msg['prefix']
     with dbw() as conn:
         with conn.cursor() as crsr:
-            for ip in ip_network(prefix):
-                try:
-                    crsr.execute('INSERT INTO calabiyau_ippool' +
-                                 ' (id, pool_id, framedipaddress)' +
-                                 ' VALUES' +
-                                 ' (uuid(), %s, %s)',
-                                 (pool_id, str(ip),))
-                except SQLIntegrityError as e:
-                    log.warning(e)
-            crsr.commit()
+            bulk = []
+            network = ip_network(prefix)
+            size = network.num_addresses
+            if size >= 65536:
+                chunk = 65536
+            else:
+                chunk = size
+
+            i = 1
+            for ip in network:
+                bulk.append('(uuid(), "%s", 0x%s)' %
+                            (pool_id, ip.packed.hex(),))
+                if i == chunk:
+                    try:
+                        crsr.execute('INSERT INTO calabiyau_ippool' +
+                                     ' (id, pool_id, framedipaddress)' +
+                                     ' VALUES' +
+                                     ' %s' % ", ".join(bulk))
+                        crsr.commit()
+                    except SQLIntegrityError as e:
+                        log.warning(e)
+                    i = 1
+                    bulk = []
+                i += 1
 
 
 @retry()
 def delete_pool(msg):
-    log = MPLogger(__name__)
+    MPLogger(__name__)
 
     pool_id = msg['pool_id']
     prefix = msg['prefix']
     with dbw() as conn:
         with conn.cursor() as crsr:
-            for ip in ip_network(prefix):
-                try:
-                    crsr.execute('DELETE FROM calabiyau_ippool' +
-                                 ' WHERE pool_id = %s' +
-                                 ' and framedipaddress = %s',
-                                 (pool_id, str(ip),))
-                except SQLIntegrityError as e:
-                    log.warning(e)
+            network = ip_network(prefix)
+            size = network.num_addresses
+            start = network[0].packed
+            end = network[size-1].packed
+            crsr.execute('DELETE FROM calabiyau_ippool' +
+                         ' WHERE pool_id = "%s"' % pool_id +
+                         ' AND framedipaddress BETWEEN %s AND %s',
+                         (start, end,))
             crsr.commit()
 
 
 def clear_nas_sessions(msg):
-    log = MPLogger(__name__)
-    nas = msg['nas_id']
+    MPLogger(__name__)
+    nas_id = msg['nas_id']
+    with db() as conn:
+        result = conn.execute('SELECT' +
+                              ' calabiyau_session.id AS id' +
+                              ',calabiyau_session.user_id AS user_id' +
+                              ',INET6_NTOA(calabiyau_session' +
+                              '.nasipaddress) AS nas' +
+                              ',INET6_NTOA(calabiyau_session' +
+                              '.framedipaddress) AS ip' +
+                              ',calabiyau_session.username AS username' +
+                              ',calabiyau_session.acctsessionid' +
+                              ' AS acctsessionid' +
+                              ',calabiyau_session.acctupdated AS acctupdated' +
+                              ' FROM calabiyau_session' +
+                              ' INNER JOIN calabiyau_nas' +
+                              ' ON calabiyau_session.nasipaddress' +
+                              ' = calabiyau_nas.server' +
+                              ' WHERE calabiyau_nas.id = %s' +
+                              ' AND accttype != "stop"',
+                              nas_id).fetchall()
+
+        for session in result:
+            session_id = session['id']
+            nas = session['nas']
+            user_id = session['user_id']
+            ip = session['ip']
+            username = session['username']
+            updated = session['acctupdated']
+            nas_session = session['acctsessionid']
+            secret = get_nas_secret(session['nas'])
+
+            pod(nas, secret, username, nas_session)
+
+            conn.execute('DELETE FROM calabiyau_session' +
+                         ' WHERE id = %s'
+                         ' AND acctupdated = %s',
+                         (session_id, updated,))
+            conn.execute('UPDATE calabiyau_ippool' +
+                         ' SET expiry_time = NULL' +
+                         ' WHERE user_id = %s' +
+                         ' AND framedipaddress = INET6_ATON(%s)',
+                         (user_id, ip,))
+            conn.commit()
 
 
 def disconnect_session(msg):
-    log = MPLogger(__name__)
+    MPLogger(__name__)
     session_id = msg['session_id']
+    with db() as conn:
+        result = conn.execute('SELECT' +
+                              ' INET6_NTOA(nasipaddress) as nas' +
+                              ',INET6_NTOA(framedipaddress) as ip' +
+                              ',user_id' +
+                              ',acctsessionid' +
+                              ',acctupdated' +
+                              ' FROM calabiyau_session' +
+                              ' WHERE id = %s',
+                              session_id).fetchone()
+        if result:
+            nas = result['nas']
+            ip = result['ip']
+            user_id = result['user_id']
+            username = get_username(user_id)
+            updated = result['acctupdated']
+            nas_session = result['acctsessionid']
+            secret = get_nas_secret(result['nas'])
+
+            pod(nas, secret, username, nas_session)
+
+            conn.execute('DELETE FROM calabiyau_session' +
+                         ' WHERE id = %s'
+                         ' AND acctupdated = %s',
+                         (session_id, updated,))
+            conn.execute('UPDATE calabiyau_ippool' +
+                         ' SET expiry_time = NULL' +
+                         ' WHERE user_id = %s' +
+                         ' AND framedipaddress = INET6_ATON(%s)',
+                         (user_id, ip,))
+            conn.commit()
 
 
 def disconnect_user(msg):
-    log = MPLogger(__name__)
-    session_id = msg['session_id']
+    MPLogger(__name__)
+    user_id = msg['user_id']
+    username = msg['username']
+    with db() as conn:
+        result = conn.execute('SELECT' +
+                              ' id' +
+                              ',INET6_NTOA(nasipaddress) as nas' +
+                              ',INET6_NTOA(framedipaddress) as ip' +
+                              ',user_id' +
+                              ',acctsessionid' +
+                              ',acctupdated' +
+                              ' FROM calabiyau_session' +
+                              ' WHERE user_id = %s' +
+                              ' AND accttype != "stop"',
+                              user_id).fetchall()
+
+        for session in result:
+            session_id = session['id']
+            nas = session['nas']
+            ip = session['ip']
+            updated = session['acctupdated']
+            nas_session = session['acctsessionid']
+            secret = get_nas_secret(session['nas'])
+
+            pod(nas, secret, username, nas_session)
+
+            conn.execute('DELETE FROM calabiyau_session' +
+                         ' WHERE id = %s'
+                         ' AND acctupdated = %s',
+                         (session_id, updated,))
+            conn.execute('UPDATE calabiyau_ippool' +
+                         ' SET expiry_time = NULL' +
+                         ' WHERE user_id = %s' +
+                         ' AND framedipaddress = INET6_ATON(%s)',
+                         (user_id, ip,))
+            conn.commit()
 
 
 @register.resource('system', '/manager')
@@ -123,7 +247,10 @@ def manager(req, resp):
         mb = MBServer('subscriber',
                       {'radius_accounting': radius_acct,
                        'append_pool': append_pool,
-                       'delete_pool': delete_pool},
+                       'delete_pool': delete_pool,
+                       'disconnect_session': disconnect_session,
+                       'disconnect_user': disconnect_user,
+                       'clear_nas_sessions': clear_nas_sessions},
                       cpu_count() * 4,
                       16)
         mb.start()

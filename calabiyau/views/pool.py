@@ -29,12 +29,11 @@
 # THE POSSIBILITY OF SUCH DAMAGE.
 from ipaddress import ip_network
 
-from luxon import db
 from luxon import register
 from luxon import router
 from luxon.helpers.access import validate_access
 from luxon.helpers.api import sql_list, obj
-
+from luxon.utils.sql import Select, Field, Value
 from calabiyau.models.pool import calabiyau_pool
 from calabiyau.helpers.pool import append as pool_append
 from calabiyau.helpers.pool import delete as pool_delete
@@ -48,76 +47,83 @@ log = GetLogger(__name__)
 class Pool(object):
     def __init__(self):
         # Normal Tachyonic uers.
-        router.add('GET', '/v1/pool/{id}', self.pool,
+        router.add('GET', '/v1/pool/{pool_id}', self.pool,
                    tag='services')
         router.add('GET', '/v1/pool', self.pools,
                    tag='services')
         router.add('POST', '/v1/pool', self.create,
                    tag='services')
-        router.add(['PUT', 'PATCH'], '/v1/pool/{id}', self.update,
+        router.add(['PUT', 'PATCH'], '/v1/pool/{pool_id}', self.update,
                    tag='services')
-        router.add('DELETE', '/v1/pool/{id}', self.delete,
+        router.add('DELETE', '/v1/pool/{pool_id}', self.delete,
                    tag='services')
-        router.add('GET', '/v1/pool/{id}/ips', self.ips,
+        router.add('GET', '/v1/pool/{pool_id}/ips', self.ips,
                    tag='services')
-        router.add('POST', '/v1/pool/{id}/add_prefix', self.add_prefix,
+        router.add('POST', '/v1/pool/{pool_id}/add_prefix', self.add_prefix,
                    tag='services')
-        router.add('DELETE', '/v1/pool/{id}/rm_prefix', self.rm_prefix,
+        router.add('DELETE', '/v1/pool/{pool_id}/rm_prefix', self.rm_prefix,
                    tag='services')
 
-    def pool(self, req, resp, id):
-        return obj(req, calabiyau_pool, sql_id=id,
+    def pool(self, req, resp, pool_id):
+        return obj(req, calabiyau_pool, sql_id=pool_id,
                    hide=('password',))
 
     def pools(self, req, resp):
         return sql_list(req,
                         'calabiyau_pool',
-                        fields = ('id',
-                                  'pool_name',),
-                        search = {'id': str,
-                                  'pool_name': str})
+                        fields=('id',
+                                'pool_name',),
+                        search={'id': str,
+                                'pool_name': str})
 
     def create(self, req, resp):
         pool = obj(req, calabiyau_pool)
         pool.commit()
         return pool
 
-    def update(self, req, resp, id):
-        pool = obj(req, calabiyau_pool, sql_id=id)
+    def update(self, req, resp, pool_id):
+        pool = obj(req, calabiyau_pool, sql_id=pool_id)
         pool.commit()
         return pool
 
-    def delete(self, req, resp, id):
-        pool = obj(req, calabiyau_pool, sql_id=id)
+    def delete(self, req, resp, pool_id):
+        pool = obj(req, calabiyau_pool, sql_id=pool_id)
         pool.commit()
 
-    def ips(self, req, resp, id):
-        pool = obj(req, calabiyau_pool, sql_id=id)
+    def ips(self, req, resp, pool_id):
+        pool = obj(req, calabiyau_pool, sql_id=pool_id)
 
-        def get_username(user_id):
-            with db() as conn:
-                result = conn.execute('SELECT username FROM' +
-                                      ' calabiyau_subscriber' +
-                                      ' WHERE id = %s', user_id).fetchone()
-                if result:
-                    return result
+        f_ippool_pool_id = Field('calabiyau_ippool.pool_id')
+        f_ippool_user_id = Field('calabiyau_ippool.user_id')
+        f_subscriber_id = Field('calabiyau_subscriber.id')
 
-        # where={'pool_id': pool['id']},
-        return sql_list(req,
-                        'calabiyau_ippool',
-                        fields = ('id',
-                                  'framedipaddress',
-                                  'expiry_time',
-                                  'user_id',),
-                        search = {'id': str,
-                                  'framedipaddress': str,
-                                  'expiry_time': str,
-                                  'user_id': str},
-                        callbacks={'user_id': get_username})
+        log.critical(type(pool.id))
+        v_ippool_pool_id = Value(pool['id'])
 
-    def add_prefix(self, req, resp, id):
+        j_subscriber = f_ippool_user_id == f_subscriber_id
+
+        select = Select("calabiyau_ippool")
+        select.where = f_ippool_pool_id == v_ippool_pool_id
+        select.left_join('calabiyau_subscriber', j_subscriber)
+
+        return sql_list(
+            req,
+            select,
+            fields=('calabiyau_ippool.id',
+                    'INET6_NTOA(calabiyau_ippool.framedipaddress)',
+                    'calabiyau_ippool.expiry_time',
+                    'calabiyau_subscriber.username'),
+            search={
+                'calabiyau_ippool.framedipaddress': 'ip',
+                'calabiyau_ippool.expiry_time': str,
+                'calabiyau_subscriber.username': str},
+            order=['calabiyau_ippool.framedipaddress',
+                   'calabiyau_ippool.expiry_time',
+                   'calabiyau_subscriber.username'])
+
+    def add_prefix(self, req, resp, pool_id):
         pool = calabiyau_pool()
-        pool.sql_id(id)
+        pool.sql_id(pool_id)
         validate_access(req, pool)
 
         if not req.json.get('prefix'):
@@ -125,11 +131,11 @@ class Pool(object):
 
         prefix = ip_network(req.json['prefix']).with_prefixlen
 
-        pool_append(id, prefix)
+        pool_append(pool_id, prefix)
 
-    def rm_prefix(self, req, resp, id):
+    def rm_prefix(self, req, resp, pool_id):
         pool = calabiyau_pool()
-        pool.sql_id(id)
+        pool.sql_id(pool_id)
         validate_access(req, pool)
 
         if not req.json.get('prefix'):
@@ -137,4 +143,4 @@ class Pool(object):
 
         prefix = ip_network(req.json['prefix']).with_prefixlen
 
-        pool_delete(id, prefix)
+        pool_delete(pool_id, prefix)
