@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2018-2019 Christiaan Frans Rademan.
+# Copyright (c) 2019 Christiaan Frans Rademan.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,43 +27,16 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
-from luxon import g
-from luxon import router
-from luxon import register
-from luxon import render_template
-from luxon.utils.bootstrap4 import form
 
-from calabiyau.ui.models.accounting import accounting
+from luxon import db
 
 
-g.nav_menu.add('/Infrastructure/Subscriber/Accounting',
-               href='/infrastructure/calabiyau/accounting',
-               tag='services:admin',
-               feather='users',
-               endpoint='subscriber')
-
-
-@register.resources()
-class Accounting():
-    def __init__(self):
-        router.add('GET',
-                   '/infrastructure/calabiyau/accounting',
-                   self.list,
-                   tag='services:admin')
-
-        router.add('GET',
-                   '/infrastructure/calabiyau/accounting/{id}',
-                   self.view,
-                   tag='services:admin')
-
-    def list(self, req, resp):
-        return render_template('calabiyau.ui/accounting/list.html',
-                               view='Subscriber Accounting')
-
-    def view(self, req, resp, id):
-        cdr = req.context.api.execute('GET', '/v1/accounting/%s' % id,
-                                      endpoint='calabiyau')
-        html_form = form(accounting, cdr.json, readonly=True)
-        return render_template('calabiyau.ui/accounting/view.html',
-                               form=html_form,
-                               view="Subscriber Accounting entry")
+def get_username(user_id):
+    with db() as conn:
+        result = conn.execute('SELECT username FROM calabiyau_subscriber' +
+                              ' WHERE id = %s',
+                              user_id).fetchone()
+        if result:
+            return result['username']
+        else:
+            return None

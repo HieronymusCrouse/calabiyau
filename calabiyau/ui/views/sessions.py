@@ -33,22 +33,22 @@ from luxon import register
 from luxon import render_template
 
 g.nav_menu.add('/Infrastructure/Subscriber/Sessions',
-               href='/infrastructure/calabiyau/sessions',
+               href='/infrastructure/subscriber/sessions',
                tag='services:view',
                feather='users',
                endpoint='subscriber')
 
 
 @register.resources()
-class Accounting():
+class Sessions():
     def __init__(self):
         router.add('GET',
-                   '/infrastructure/calabiyau/sessions',
+                   '/infrastructure/subscriber/sessions',
                    self.list,
                    tag='services:view')
 
         router.add('GET',
-                   '/infrastructure/calabiyau/disconnect/{acct_id}',
+                   '/infrastructure/subscriber/disconnect/{session_id}',
                    self.disconnect,
                    tag='services:admin')
 
@@ -56,6 +56,6 @@ class Accounting():
         return render_template('calabiyau.ui/sessions/list.html',
                                view='Subscriber Accounting')
 
-    def disconnect(self, req, resp, acct_id):
-        req.context.api.execute('PUT', '/v1/disconnect/%s' % acct_id,
-                                endpoint='calabiyau')
+    def disconnect(self, req, resp, session_id):
+        req.context.api.execute('PUT', '/v1/disconnect/%s' % session_id,
+                                endpoint='subscriber')

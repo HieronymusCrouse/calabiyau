@@ -1,7 +1,7 @@
 {% extends "photonic/view.html" %}
 
 {% block content %}
-    <form id="form" method='post' enctype="multipart/form-data">
+    <form id="form" data-no-submit method='post' enctype="multipart/form-data">
         {{ form }}
     </form>
 <table class="display" data-endpoint='subscriber' data-url="/v1/virtual/{{id}}/nas" width="100%">
@@ -20,7 +20,7 @@
         </tr>
     </thead>
 </table>
- <form autocomplete="off" data-msg="Succesfully added NAS" data-datatable action="{{APP}}/infrastructure/subscriber/virtual/add_nas/{{id}}" enctype="multipart/form-data" class="row">
+ <form autocomplete="off" data-msg="Succesfully added NAS" data-table action="{{APP}}/infrastructure/subscriber/virtual/add_nas/{{id}}" enctype="multipart/form-data" class="row">
 	 <div class="col-sm-2">
 		<input type="text" name="name" placeholder="Short name" class="form-control">
 	 </div>
@@ -43,6 +43,6 @@
 
 {% block buttons %}
     <a href="{{ APP }}/infrastructure/subscriber/virtual/{{id}}" class="btn btn-default">Cancel</a>
-    <a data-confirm="Delete Virtual?" data-close-windows="2" href="{{ APP }}/infrastructure/subscriber/virtual/delete/{{id}}" class="btn btn-danger">Remove</a>
+    <a data-confirm="Delete Virtual?" data-table data-close-windows="2" href="{{ APP }}/infrastructure/subscriber/virtual/delete/{{id}}" class="btn btn-danger">Remove</a>
     <a href="{{ APP }}/infrastructure/subscriber/virtual/edit/{{id}}" data-form="form" class="btn btn-primary">Save</a>
 {% endblock %}
