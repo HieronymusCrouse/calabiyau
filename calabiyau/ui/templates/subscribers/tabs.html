@@ -10,7 +10,7 @@
         </form>
     </div>
     <div id="daily">
-        <table data-xtime='day' data-ysuffix=' GiB' data-stack data-graph="bar" data-endpoint="subscriber" data-url="/v1/accounting/daily/{{id}}" data-label="today" data-width="500px">
+        <table data-xtime='day' data-ysuffix=' GiB' data-stack data-graph="bar" data-endpoint="subscriber" data-url="/v1/accounting/data/daily/{{id}}" data-label="today" data-width="500px">
             <thead>
                 <tr>
                     <th data-border-width="1" data-background-color="red" data-border-color="red" id='acctinputoctets'>Upload</th>
@@ -20,7 +20,7 @@
         </table>
     </div>
     <div id="monthly">
-        <table data-xtime='month' data-ysuffix=' GiB' data-stack data-graph="bar" data-endpoint="subscriber" data-url="/v1/accounting/monthly/{{id}}" data-label="today" data-width=500px;>
+        <table data-xtime='month' data-ysuffix=' GiB' data-stack data-graph="bar" data-endpoint="subscriber" data-url="/v1/accounting/data/monthly/{{id}}" data-label="today" data-width=500px;>
             <thead>
                 <tr>
                     <th data-border-width="1" data-background-color="red" data-border-color="red" id='acctinputoctets'>Upload</th>
