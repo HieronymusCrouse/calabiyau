@@ -5,3 +5,4 @@ from calabiyau.views import pool
 from calabiyau.views import subscribers
 from calabiyau.views import radius
 from calabiyau.views import vendors
+from calabiyau.views import accounting
