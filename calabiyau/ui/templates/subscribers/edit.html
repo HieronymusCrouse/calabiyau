@@ -1,9 +1,7 @@
 {% extends "photonic/view.html" %}
 
 {% block content %}
-    <form id="form" data-no-submit autocomplete="off" method='post' enctype="multipart/form-data">
-        {{ form }}
-    </form>
+    {% include "calabiyau.ui/subscribers/tabs.html" %}
 {% endblock %}
 
 {% block buttons %}
