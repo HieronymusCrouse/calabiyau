@@ -141,6 +141,12 @@ def preacct(fr):
 
 def accounting(fr):
     try:
+        fr = parse_fr(fr)
+        if not require_attributes('access', fr, ['User-Name',
+                                                 'NAS-IP-Address']):
+
+            return radiusd.RLM_MODULE_REJECT
+
         with Rmq() as mb:
             message = {
                 'type': 'radius_accounting',
@@ -148,6 +154,18 @@ def accounting(fr):
                         'datetime': str(datetime.datetime.utcnow())}
             }
             mb.distribute(**message)
+
+        with Db() as dba:
+            user = get_user(dba,
+                            fr['NAS-IP-Address'],
+                            fr['User-Name'])
+
+            if user is not None:
+                return (radiusd.RLM_MODULE_OK,
+                        (('Tmp-String-0', user['package']),),
+                        ())
+            else:
+                return radiusd.RLM_MODULE_OK
 
     except Exception as e:
         error_handler(e)
