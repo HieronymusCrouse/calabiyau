@@ -326,6 +326,7 @@ def get_user(db, nas_ip, username):
                      ' as volume_used,' +
                      ' calabiyau_subscriber.package_expire' +
                      ' as package_expire,' +
+                     ' calabiyau_package.name as package,' +
                      ' calabiyau_package.plan as plan,' +
                      ' calabiyau_package.simultaneous as simultaneous,' +
                      ' calabiyau_package.pool_id as pool_id,' +

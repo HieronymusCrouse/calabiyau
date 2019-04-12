@@ -12,7 +12,7 @@ server radius {
 
 	authorize {
 		python
-        insert_acct_class
+		insert_acct_class
 	}
 
 
@@ -22,16 +22,19 @@ server radius {
 
 
 	preacct {
-		#update control {
-		#	Replicate-To-Realm := 'PROCERA'
-        #        }
+		update control {
+			Replicate-To-Realm := 'REPLICATE'
+                }
 		acct_unique
 		acct_counters64
 	}
 
 	accounting {
 		python
-		replicate
+		update request {
+			Class := "%{reply:Tmp-String-0}"
+		}
+		#replicate
 	}
 
 
@@ -43,6 +46,7 @@ server radius {
 	}
 
 	pre-proxy {
+		python
 	}
 
 	post-proxy {
