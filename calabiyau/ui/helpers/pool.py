@@ -33,7 +33,7 @@ from luxon import g
 def pool():
     response = g.current_request.context.api.execute(
         'GET',
-        '/v1/pool',
+        '/v1/pool?limit=0',
         endpoint='subscriber').json
     pools = []
     pools.append(('', 'Select IP Pool',))
