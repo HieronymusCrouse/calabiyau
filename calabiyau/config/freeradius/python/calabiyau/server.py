@@ -112,7 +112,7 @@ def authorize(fr):
                                            ip)]
                         else:
                             pool_name = get_pool_name(dba, user)
-                            log.auth("IP Pool Empty user '%s' pool '%s)'"
+                            log.auth("IP Pool Empty user '%s' pool '%s'"
                                      % (user['username'],
                                         pool_name,))
                             return radiusd.RLM_MODULE_REJECT
