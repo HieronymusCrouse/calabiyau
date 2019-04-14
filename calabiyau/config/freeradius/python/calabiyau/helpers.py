@@ -262,7 +262,7 @@ def get_pool_name(db, user):
                      ' pool_name' +
                      ' FROM calabiyau_pool' +
                      ' WHERE id = %s' +
-                     ' LIMIT 1' +
+                     ' LIMIT 1',
                      (user['pool_id'], ))
         result = crsr.fetchone()
         db.commit()
