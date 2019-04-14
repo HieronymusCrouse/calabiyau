@@ -256,6 +256,21 @@ class Db(object):
                 pass
 
 
+def get_pool_name(db, user):
+    with db.cursor() as crsr:
+        crsr.execute('SELECT' +
+                     ' pool_name' +
+                     ' FROM calabiyau_pool' +
+                     ' WHERE id = %s' +
+                     ' LIMIT 1' +
+                     (user['pool_id'], ))
+        result = crsr.fetchone()
+        db.commit()
+        if result:
+            return result['pool_name']
+        return None
+
+
 def get_ip(db, user):
     with db.cursor() as crsr:
         crsr.execute('SELECT' +
@@ -289,8 +304,8 @@ def has_session(db, user):
     with db.cursor() as crsr:
         crsr.execute("SELECT id" +
                      " FROM calabiyau_session" +
-                     " WHERE user_id = %s AND",
-                     " accttype != 'stop'"
+                     " WHERE user_id = %s AND" +
+                     " accttype != 'stop'",
                      (user['id'],))
         db.commit()
         return crsr.fetchone()

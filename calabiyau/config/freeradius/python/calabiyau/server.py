@@ -41,6 +41,7 @@ from calabiyau.helpers import (Db,
                                Rmq,
                                usage,
                                has_session,
+                               get_pool_name,
                                error_handler)
 
 from logger import Logger
@@ -110,9 +111,10 @@ def authorize(fr):
                             attributes += [('Framed-IP-Address',
                                            ip)]
                         else:
-                            log.auth('IP Pool Empty (%s) (%s)'
+                            pool_name = get_pool_name(dba, user)
+                            log.auth("IP Pool Empty user '%s' pool '%s)'"
                                      % (user['username'],
-                                        user['pool_id'],))
+                                        pool_name,))
                             return radiusd.RLM_MODULE_REJECT
                 else:
                     log.auth('User not found (%s)' % fr['User-Name'])
