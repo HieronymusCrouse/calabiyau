@@ -33,7 +33,7 @@ from luxon import g
 def virtual():
     response = g.current_request.context.api.execute(
         'GET',
-        '/v1/virtual',
+        '/v1/virtual?limit=0',
         endpoint='subscriber').json
     virtuals = []
     for virtual in response['payload']:
