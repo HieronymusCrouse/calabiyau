@@ -57,7 +57,7 @@ class calabiyau_subscriber(SQLModel):
     package_expire = SQLModel.DateTime(null=True)
     volume_used_bytes = SQLModel.BigInt(null=False, signed=False, default=0)
     volume_used = SQLModel.Boolean(null=False, default=False)
-    calabiyau_unique = SQLModel.UniqueIndex(username, domain)
+    calabiyau_unique = SQLModel.UniqueIndex(username)
     calabiyau_pkg_ref = SQLModel.ForeignKey(package_id,
                                             calabiyau_package.id,
                                             on_delete='RESTRICT')
