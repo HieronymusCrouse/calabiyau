@@ -176,12 +176,12 @@ class Accounting(object):
 
         content.append({'type': 'Topups',
                         'percent': round(topups_p),
-                        'gb': topups})
+                        'gb': round(topups, 2)})
         content.append({'type': 'Used',
                         'percent': round(used_p),
-                        'gb': used})
+                        'gb': round(used, 2)})
         content.append({'type': 'Package',
                         'percent': round(pkg_volume_p),
-                        'gb': pkg_volume})
+                        'gb': round(pkg_volume, 2)})
 
         return raw_list(req, content)
