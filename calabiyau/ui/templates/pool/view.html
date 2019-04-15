@@ -1,13 +1,13 @@
 {% extends "photonic/view.html" %}
 {% block content %}
-<form method='post' enctype="multipart/form-data" disabled>
+<form data-no-submit method='post' enctype="multipart/form-data" disabled>
     {{ form }}
 </form>
 <table class="display" data-endpoint='subscriber' data-url="/v1/pool/{{id}}/ips" width="100%">
     <thead>
         <tr>
             <th id='framedipaddress'>IP</th>
-            <th id='expiry_time'>Expiry</th>
+            <th data-localize id='expiry_time'>Expiry</th>
             <th id='username'>Username</th>
         </tr>
     </thead>
