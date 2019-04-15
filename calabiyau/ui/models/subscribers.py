@@ -34,7 +34,9 @@ from calabiyau.ui.helpers.package import package
 
 
 class subscriber(Model):
-    package_id = Model.Uuid(null=False, callback=package)
+    package_id = Model.Uuid(null=False,
+                            label="Package",
+                            callback=package)
     username = Model.Username(placeholder="john", max_length=100, null=False)
     password = Model.Password(max_length=100, null=True, ignore_null=True)
     email = Model.Email(placeholder="john.doe@acmecorp.org", max_length=255)

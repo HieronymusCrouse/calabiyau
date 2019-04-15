@@ -29,8 +29,9 @@
 # THE POSSIBILITY OF SUCH DAMAGE.
 from luxon import register
 from luxon import router
-from luxon.helpers.api import sql_list, obj
+from luxon.helpers.api import raw_list, sql_list, obj
 from luxon.utils import sql
+from luxon import db
 
 from calabiyau.models.subscribers import calabiyau_subscriber
 
@@ -110,10 +111,77 @@ class Accounting(object):
                         limit=12)
 
     def data_usage(self, req, resp, user_id):
+        content = []
         user = obj(req, calabiyau_subscriber, sql_id=user_id)
+
+        if user['volume_used_bytes']:
+            used = user['volume_used_bytes'] / 1024 / 1024 / 1024
+        else:
+            used = 0
+
         f_user_id = sql.Field('user_id')
         v_user_id = sql.Value(user['id'])
+        f_volume_gb = sql.Field('sum(volume_gb) as volume_gb')
 
         select = sql.Select('calabiyau_topup')
+        select.fields = f_volume_gb
         select.where = f_user_id == v_user_id
-        
+        with db() as conn:
+            result = conn.execute(select.query, select.values).fetchone()
+            if result:
+                topups = result['volume_gb']
+                if topups is None:
+                    topups = 0
+            else:
+                topups = 0
+
+            if not user['volume_used']:
+                f_pkg_id = sql.Field('id')
+                v_pkg_id = sql.Value(user['package_id'])
+                f_volume_gb = sql.Field('volume_gb')
+                select = sql.Select('calabiyau_package')
+                select.where = f_pkg_id == v_pkg_id
+                result = conn.execute(select.query, select.values).fetchone()
+                if result:
+                    pkg_volume = result['volume_gb']
+                    if pkg_volume is None:
+                        pkg_volume = 0
+                else:
+                    pkg_volume = 0
+            else:
+                pkg_volume = 0
+
+            total = topups + pkg_volume
+
+            try:
+                used_p = 100 * float(used)/float(total)
+            except:
+                used_p = 0
+
+            if pkg_volume == 0:
+                topups = float(topups) - float(used)
+
+            try:
+                topups_p = 100 * float(topups)/float(total)
+            except:
+                topups_p = 0
+
+            if pkg_volume > 0:
+                pkg_volume = float(pkg_volume) - float(used)
+
+            try:
+                pkg_volume_p = 100 * float(pkg_volume)/float(total)
+            except:
+                pkg_volume_p = 0
+
+        content.append({'type': 'Topups',
+                        'percent': round(topups_p),
+                        'gb': round(topups, 2)})
+        content.append({'type': 'Used',
+                        'percent': round(used_p),
+                        'gb': round(used, 2)})
+        content.append({'type': 'Package',
+                        'percent': round(pkg_volume_p),
+                        'gb': round(pkg_volume, 2)})
+
+        return raw_list(req, content)
