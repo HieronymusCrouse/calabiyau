@@ -230,7 +230,7 @@ def applyctx(crsr, user, ctx, fr, secret, status):
                 user['username'], nas_session_id,
                 attributes)
 
-        crsr.execute('UPDATE subscriber_session' +
+        crsr.execute('UPDATE calabiyau_session' +
                      ' SET ctx = %s' +
                      ' WHERE acctuniqueid = %s',
                      (ctx, unique_session_id,))
