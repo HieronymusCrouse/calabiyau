@@ -61,7 +61,7 @@ def coa(nas, secret, username, session, attributes):
         coa.write('User-Name = "%s"\n' % username)
         coa.write('NAS-IP-Address = %s\n' % nas)
         for attribute in attributes:
-            coa.write('%s = %s\n' % (attribute[0], attribute[1],))
+            coa.write('%s = "%s"\n' % (attribute[0], attribute[1],))
     try:
         execute(['/usr/bin/env',
                  'radclient',
