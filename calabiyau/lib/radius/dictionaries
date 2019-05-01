@@ -1,0 +1,34 @@
+# Internal Attributes
+$INCLUDE dictionary/calabiyau
+
+# RFC Attributes
+$INCLUDE dictionary/rfc2865
+$INCLUDE dictionary/rfc2866
+$INCLUDE dictionary/rfc2867
+$INCLUDE dictionary/rfc2868
+$INCLUDE dictionary/rfc2869
+$INCLUDE dictionary/rfc3162
+$INCLUDE dictionary/rfc3576
+$INCLUDE dictionary/rfc3580
+$INCLUDE dictionary/rfc4072
+$INCLUDE dictionary/rfc4372
+$INCLUDE dictionary/rfc4603
+$INCLUDE dictionary/rfc4675
+$INCLUDE dictionary/rfc4679
+$INCLUDE dictionary/rfc4818
+$INCLUDE dictionary/rfc4849
+$INCLUDE dictionary/rfc5176
+$INCLUDE dictionary/rfc5607
+$INCLUDE dictionary/rfc5904
+$INCLUDE dictionary/rfc6519
+$INCLUDE dictionary/rfc6677
+$INCLUDE dictionary/rfc6911
+$INCLUDE dictionary/rfc6930
+$INCLUDE dictionary/rfc7055
+$INCLUDE dictionary/rfc7155
+$INCLUDE dictionary/rfc7268
+$INCLUDE dictionary/iana
+
+# Vendors Attributes
+$INCLUDE dictionary/mikrotik
+$INCLUDE dictionary/erx

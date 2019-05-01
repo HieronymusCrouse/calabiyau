@@ -146,42 +146,22 @@ class Accounting(object):
                     pkg_volume = result['volume_gb']
                     if pkg_volume is None:
                         pkg_volume = 0
+                    pkg_volume = pkg_volume - used
+                    if pkg_volume < 0:
+                        pkg_volume = 0
                 else:
                     pkg_volume = 0
             else:
                 pkg_volume = 0
-
-            total = topups + pkg_volume
-
-            try:
-                used_p = 100 * float(used)/float(total)
-            except:
-                used_p = 0
-
-            if pkg_volume == 0:
                 topups = float(topups) - float(used)
-
-            try:
-                topups_p = 100 * float(topups)/float(total)
-            except:
-                topups_p = 0
-
-            if pkg_volume > 0:
-                pkg_volume = float(pkg_volume) - float(used)
-
-            try:
-                pkg_volume_p = 100 * float(pkg_volume)/float(total)
-            except:
-                pkg_volume_p = 0
+                if topups < 0:
+                    topups = 0
 
         content.append({'type': 'Topups',
-                        'percent': round(topups_p),
-                        'gb': round(topups, 2)})
+                        'gb': round(float(topups), 2)})
         content.append({'type': 'Used',
-                        'percent': round(used_p),
-                        'gb': round(used, 2)})
+                        'gb': round(float(used), 2)})
         content.append({'type': 'Package',
-                        'percent': round(pkg_volume_p),
-                        'gb': round(pkg_volume, 2)})
+                        'gb': round(float(pkg_volume), 2)})
 
         return raw_list(req, content)

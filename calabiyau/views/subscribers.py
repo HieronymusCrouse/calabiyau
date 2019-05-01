@@ -30,7 +30,7 @@
 from luxon import register
 from luxon import router
 from luxon.helpers.api import sql_list, obj
-from luxon.utils.hashing import md5sum
+# from luxon.utils.hashing import md5sum
 from luxon import MBClient
 
 from calabiyau.models.subscribers import calabiyau_subscriber
@@ -101,8 +101,10 @@ class Users(object):
 
         self.pkg_set(req, user)
 
-        if req.json.get('password'):
-            user['password'] = md5sum(req.json['password'])
+        # clear text password needed for CHAP
+        # if req.json.get('password'):
+        #    user['password'] = md5sum(req.json['password'])
+
         user.commit()
         return user
 
@@ -110,8 +112,9 @@ class Users(object):
         user = obj(req, calabiyau_subscriber, sql_id=id,
                    hide=('password',))
 
-        if req.json.get('password'):
-            user['password'] = md5sum(req.json['password'])
+        # clear text password needed for CHAP
+        # if req.json.get('password'):
+        #    user['password'] = md5sum(req.json['password'])
 
         self.pkg_set(req, user)
 
