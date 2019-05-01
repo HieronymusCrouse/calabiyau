@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2018-2019 Christiaan Frans Rademan.
+# Copyright (c) 2019 Christiaan Frans Rademan.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -497,6 +497,4 @@ def acct(msg):
                       output_octets,
                       status)
 
-                if not user['static_ip4'] and user['pool_id']:
-                    update_ip(connw, status, user, pkt)
     return True

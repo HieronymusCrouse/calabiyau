@@ -170,7 +170,7 @@ def update_ip(db, status, user, pkt):
                      ' WHERE pool_id = %s AND' +
                      ' framedipaddress = INET6_ATON(%s)' +
                      ' FOR UPDATE',
-                     (user['pool_id'], pkt['Framed-IP-Address'],))
+                     (user['pool_id'], pkt['Framed-IP-Address'][0],))
 
         if (status == 'interim-update' or
                 status == 'start'):
@@ -180,13 +180,13 @@ def update_ip(db, status, user, pkt):
                          ' WHERE pool_id = %s AND' +
                          ' framedipaddress = INET6_ATON(%s) AND' +
                          ' expiry_time is not NULL',
-                         (user['pool_id'], pkt['Framed-IP-Address'],))
+                         (user['pool_id'], pkt['Framed-IP-Address'][0],))
         elif status == 'stop':
             crsr.execute('UPDATE calabiyau_ippool SET' +
                          ' expiry_time = NULL' +
                          ' WHERE pool_id = %s AND' +
                          ' framedipaddress = INET6_ATON(%s)',
-                         (user['pool_id'], pkt['Framed-IP-Address'],))
+                         (user['pool_id'], pkt['Framed-IP-Address'][0],))
         crsr.commit()
 
 

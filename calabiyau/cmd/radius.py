@@ -44,6 +44,7 @@ from calabiyau.core.helpers.radius import (get_user,
                                            get_attributes,
                                            has_session,
                                            get_ip,
+                                           update_ip,
                                            get_pool_name,
                                            encode_packet)
 from calabiyau.core.handlers.radius.server import Server
@@ -130,21 +131,36 @@ class RadiusServer(Server):
             mb.send('radius_accounting',
                     {'attributes': encode_packet(pkt),
                      'datetime': str(datetime.utcnow())})
-        duplicate_to = g.app.config.get('radius', 'duplicate', fallback=None)
-        if duplicate_to:
-            with db() as dbro:
-                with dbro.cursor() as crsr:
-                    client = pkt.get('NAS-IP-Address')[0]
-                    user = get_user(crsr,
-                                    client,
-                                    pkt.source[0],
-                                    pkt.get('User-Name')[0])
-                    if user:
-                        pkt['Class'] = user['package'].encode('utf-8')
-                        duplicates = duplicate_to.split(',')
-                        for duplicate_to in duplicates:
-                            duplicate_to = duplicate_to.strip()
-                            duplicate(pkt.raw_packet, duplicate_to, 1813)
+        with db() as dbro:
+            with dbro.cursor() as crsr:
+                client = pkt.get('NAS-IP-Address')[0]
+                user = get_user(crsr,
+                                client,
+                                pkt.source[0],
+                                pkt.get('User-Name')[0])
+                if user:
+                    status = pkt.get('Acct-Status-Type', [''])[0].lower()
+                    if not user['static_ip4'] and user['pool_id']:
+                        with dbw() as dbwr:
+                            update_ip(dbwr, status, user, pkt)
+
+                duplicate_to = g.app.config.get('radius',
+                                                'duplicate',
+                                                fallback=None)
+                if duplicate_to:
+                    with dbro.cursor() as crsr:
+                        client = pkt.get('NAS-IP-Address')[0]
+                        user = get_user(crsr,
+                                        client,
+                                        pkt.source[0],
+                                        pkt.get('User-Name')[0])
+                        if user:
+                            pkt['Class'] = user['package'].encode('utf-8')
+                            duplicates = duplicate_to.split(',')
+                            for duplicate_to in duplicates:
+                                duplicate_to = duplicate_to.strip()
+                                duplicate(pkt.raw_packet, duplicate_to, 1813)
+
         return True
 
     def coa(self, pkt, debug):
