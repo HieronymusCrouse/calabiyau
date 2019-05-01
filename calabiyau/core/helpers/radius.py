@@ -30,6 +30,8 @@
 import base64
 import pickle
 
+from luxon.utils.mysql import retry
+
 from calabiyau.helpers.radius import dictionary
 
 dictionary = dictionary()
@@ -159,6 +161,7 @@ def get_ip(db, user):
         return None
 
 
+@retry()
 def update_ip(db, status, user, pkt):
     with db.cursor() as crsr:
         if 'Framed-IP-Address' not in pkt:
