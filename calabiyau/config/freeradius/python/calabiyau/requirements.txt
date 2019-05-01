@@ -1,3 +1,0 @@
-PyMySQL
-configparser
-pika==0.12.0
