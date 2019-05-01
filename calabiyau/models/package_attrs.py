@@ -41,6 +41,7 @@ class calabiyau_package_attr(SQLModel):
     id = SQLModel.Uuid(default=uuid4, internal=True)
     package_id = SQLModel.Uuid()
     attribute = SQLModel.String()
+    tag = SQLModel.TinyInt(null=True, signed=False)
     value = SQLModel.String()
     ctx = SQLModel.String()
     nas_type = SQLModel.Word(max_length=64, null=False,

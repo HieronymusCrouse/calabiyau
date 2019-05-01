@@ -27,52 +27,54 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
+import socket
 
-from luxon.utils.system import execute
-from luxon.utils.files import rm
+from luxon import g
+from luxon.utils.encoding import if_unicode_to_bytes
+
+from calabiyau import constants as const
+from calabiyau.exceptions import TimeoutError
+from calabiyau.core.handlers.radius.client import Client
 
 
 def pod(nas, secret, username, session):
-    tmp_file = '/tmp/pod_%s_%s_%s.txt' % (nas, username, session,)
-    with open(tmp_file, 'w') as pod:
-        pod.write('Acct-Session-Id = "%s"\n' % session)
-        pod.write('User-Name = "%s"\n' % username)
-        pod.write('NAS-IP-Address = %s\n' % nas)
+    secret = if_unicode_to_bytes(secret)
+    srv = Client(server=nas, secret=secret, debug=g.app.debug)
+    req = srv.pod(code=const.RAD_DISCONNECTREQUEST)
+    req['Acct-Session-Id'] = session
+    req['User-Name'] = username
+    req['NAS-IP-Address'] = nas
     try:
-        execute(['/usr/bin/env',
-                 'radclient',
-                 '-f',
-                 tmp_file,
-                 '-x',
-                 '%s:3799' % nas,
-                 'disconnect',
-                 secret])
-    except Exception:
-        rm(tmp_file)
+        reply = srv.send_packet(req)
+    except TimeoutError:
+        reply = None
+    except socket.error:
+        reply = None
+
+    if reply and reply.code == const.RAD_DISCONNECTACK:
+        return True
+    else:
         return False
-    rm(tmp_file)
-    return True
 
 
 def coa(nas, secret, username, session, attributes):
-    tmp_file = '/tmp/coa_%s_%s_%s.txt' % (nas, username, session,)
-    with open(tmp_file, 'w') as coa:
-        coa.write('Acct-Session-Id = "%s"\n' % session)
-        coa.write('User-Name = "%s"\n' % username)
-        coa.write('NAS-IP-Address = %s\n' % nas)
-        for attribute in attributes:
-            coa.write('%s = "%s"\n' % (attribute[0], attribute[1],))
+    secret = if_unicode_to_bytes(secret)
+    srv = Client(server=nas, secret=secret, debug=g.app.debug)
+    req = srv.coa(code=const.RAD_COAREQUEST)
+    req['Acct-Session-Id'] = session
+    req['User-Name'] = username
+    req['NAS-IP-Address'] = nas
+    for attr in attributes:
+        req[attr] = attributes[attr]
+
     try:
-        execute(['/usr/bin/env',
-                 'radclient',
-                 '-f',
-                 tmp_file,
-                 '-x',
-                 '%s:3799' % nas,
-                 'coa',
-                 secret])
-    except Exception:
-        rm(tmp_file)
+        reply = srv.send_packet(req)
+    except TimeoutError:
+        reply = None
+    except socket.error:
+        reply = None
+
+    if reply and reply.code == const.RAD_COAACK:
+        return True
+    else:
         return False
-    rm(tmp_file)
-    return True
