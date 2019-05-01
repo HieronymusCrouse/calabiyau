@@ -57,7 +57,7 @@ def purge_sessions():
             while True:
                 log.info('Purging old stop sessions')
                 crsr.execute("DELETE FROM calabiyau_session WHERE" +
-                             " processed < (NOW() - INTERVAL 8 HOUR)" +
+                             " processed < (NOW() - INTERVAL 24 HOUR)" +
                              " AND accttype = 'stop'")
                 crsr.commit()
                 time.sleep(60)
@@ -147,7 +147,6 @@ def clear_nas_sessions(msg):
             updated = session['acctupdated']
             nas_session = session['acctsessionid']
             secret = get_nas_secret(session['nas'])
-
             pod(nas, secret, username, nas_session)
 
             conn.execute('DELETE FROM calabiyau_session' +
@@ -237,7 +236,7 @@ def disconnect_user(msg):
             conn.commit()
 
 
-@register.resource('system', '/manager')
+@register.resource('service', '/manager')
 def manager(req, resp):
     try:
         procs = []
@@ -266,7 +265,6 @@ def manager(req, resp):
         def end(sig):
             for proc, target in procs:
                 proc.terminate()
-
             mb.stop()
             mplog.close()
             exit()

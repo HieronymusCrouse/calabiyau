@@ -35,10 +35,14 @@ from luxon.utils import sql
 
 from calabiyau.models.packages import calabiyau_package
 from calabiyau.models.package_attrs import calabiyau_package_attr
+from calabiyau.helpers.radius import dictionary
+from calabiyau.core.utils.radius import encode
+
+dictionary = dictionary()
 
 
 @register.resources()
-class Groups(object):
+class Packages(object):
     def __init__(self):
         router.add('GET', '/v1/package/{id}', self.package,
                    tag='services')
@@ -63,9 +67,9 @@ class Groups(object):
     def packages(self, req, resp):
         return sql_list(req,
                         'calabiyau_package',
-                        fields = ('id', 'name', ),
-                        search = {'id': str,
-                                  'name': str })
+                        fields=('id', 'name',),
+                        search={'id': str,
+                                'name': str})
 
     def create(self, req, resp):
         package = obj(req, calabiyau_package)
@@ -88,20 +92,48 @@ class Groups(object):
         select = sql.Select('calabiyau_package_attr')
         select.where = w_package_id
         return sql_list(req, select,
-                        fields = ('id',
-                                  'attribute',
-                                  'value',
-                                  'ctx',
-                                  'nas_type'),
-                        search = {'id': str,
-                                  'attribute': str,
-                                  'value': str,
-                                  'ctx': str,
-                                  'nas_type': str})
+                        fields=('id',
+                                'attribute',
+                                'tag',
+                                'value',
+                                'ctx',
+                                'nas_type'),
+                        search={'id': str,
+                                'attribute': str,
+                                'value': str,
+                                'ctx': str,
+                                'nas_type': str})
 
     def add_attr(self, req, resp, id):
         attr = obj(req, calabiyau_package_attr)
         attr['package_id'] = id
+        if attr['attribute'] not in dictionary.attributes:
+            raise ValueError('Invalid Attribute defined')
+        if (attr['tag'] and
+                not dictionary[attr['attribute']].has_tag):
+            raise ValueError('Attribute has no tags')
+        if (not attr['tag'] and
+                dictionary[attr['attribute']].has_tag):
+            raise ValueError('Attribute requires tag')
+
+        values = dictionary[attr['attribute']].user_values
+        if values:
+            if attr['value'] not in values:
+                raise ValueError("Attribute value error" +
+                                 " '%s'." % attr['attribute'] +
+                                 " Possible values: %s" %
+                                 ", ".join(values.keys()))
+            else:
+                attr['value'] = str(values[attr['value']])
+
+        try:
+            encode(dictionary[attr['attribute']].type,
+                   attr['value'])
+        except Exception as err:
+            raise ValueError("Attribute value error '%s': %s" %
+                             (attr['attribute'],
+                              err,))
+
         attr.commit()
         return attr
 

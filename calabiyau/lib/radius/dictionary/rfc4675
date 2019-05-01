@@ -1,0 +1,6 @@
+ATTRIBUTE Egress-VLANID 56 integer
+ATTRIBUTE Ingress-Filters 57 integer
+ATTRIBUTE Egress-VLAN-Name 58 string
+ATTRIBUTE User-Priority-Table 59 octets # 8
+VALUE Ingress-Filters Enabled 1
+VALUE Ingress-Filters Disabled 2

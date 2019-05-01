@@ -35,24 +35,21 @@ from luxon.utils.timezone import (calc_next_expire,
                                   utc,
                                   parse_datetime,
                                   now)
-from calabiyau.msgbus.radius.helpers import (parse_fr,
-                                             require_attributes,
-                                             get_user,
-                                             get_attributes,
-                                             update_ip)
+from calabiyau.core.helpers.radius import (decode_packet,
+                                           get_user,
+                                           get_attributes,
+                                           update_ip)
 from calabiyau.utils.radius import pod, coa
 
 log = GetLogger(__name__)
 
 
 @retry()
-def do_acct(db, fr, dt, user, status):
+def do_acct(db, pkt, client, nas, nas_id, unique_id, dt, user, status):
     user_id = user['id']
     username = user['username']
-    nas_session_id = fr['Acct-Session-Id']
-    unique_session_id = fr['Acct-Unique-Session-Id']
-    input_octets = int(fr.get('Acct-Input-Octets64', 0))
-    output_octets = int(fr.get('Acct-Output-Octets64', 0))
+    input_octets = int(pkt.get('Acct-Input-Octets64', [0])[0])
+    output_octets = int(pkt.get('Acct-Output-Octets64', [0])[0])
 
     with db.cursor() as crsr:
         #######################################
@@ -71,7 +68,7 @@ def do_acct(db, fr, dt, user, status):
                      ' WHERE acctuniqueid = %s' +
                      ' LIMIT 1' +
                      ' FOR UPDATE',
-                     (unique_session_id,))
+                     (unique_id,))
         session = crsr.fetchone()
         if session and (utc(session['acctupdated']) >= dt or
                         session['accttype'] == 'stop'):
@@ -137,32 +134,32 @@ def do_acct(db, fr, dt, user, status):
                          " accttype = %s",
                          (user_id,
                           username,
-                          nas_session_id,
-                          unique_session_id,
-                          fr['NAS-IP-Address'],
-                          fr.get('NAS-Port-ID'),
-                          fr.get('NAS-Port'),
-                          fr.get('NAS-Port-Type'),
-                          fr.get('Called-Station-Id'),
-                          fr.get('Calling-Station-Id'),
-                          fr.get('Service-Type'),
-                          fr.get('Framed-Protocol'),
-                          fr.get('Framed-IP-Address'),
+                          nas_id,
+                          unique_id,
+                          nas,
+                          pkt.get('NAS-Port-ID'),
+                          pkt.get('NAS-Port'),
+                          pkt.get('NAS-Port-Type'),
+                          pkt.get('Called-Station-Id'),
+                          pkt.get('Calling-Station-Id'),
+                          pkt.get('Service-Type'),
+                          pkt.get('Framed-Protocol'),
+                          pkt.get('Framed-IP-Address'),
                           input_octets,
                           output_octets,
                           dt,
                           dt,
                           status,
-                          nas_session_id,
-                          fr['NAS-IP-Address'],
-                          fr.get('NAS-Port-ID'),
-                          fr.get('NAS-Port'),
-                          fr.get('NAS-Port-Type'),
-                          fr.get('Called-Station-Id'),
-                          fr.get('Calling-Station-Id'),
-                          fr.get('Service-Type'),
-                          fr.get('Framed-Protocol'),
-                          fr.get('Framed-IP-Address'),
+                          nas_id,
+                          nas,
+                          pkt.get('NAS-Port-ID'),
+                          pkt.get('NAS-Port'),
+                          pkt.get('NAS-Port-Type'),
+                          pkt.get('Called-Station-Id'),
+                          pkt.get('Calling-Station-Id'),
+                          pkt.get('Service-Type'),
+                          pkt.get('Framed-Protocol'),
+                          pkt.get('Framed-IP-Address'),
                           input_octets,
                           output_octets,
                           dt,
@@ -209,20 +206,25 @@ def do_acct(db, fr, dt, user, status):
         return (input_octets, output_octets,)
 
 
-def applyctx(crsr, user, ctx, fr, secret, status):
+def applyctx(crsr, user, ctx, pkt, secret, status):
     if (status == 'interim-update' or
             status == 'start'):
 
-        nas_session_id = fr['Acct-Session-Id']
-        nas_ip_address = fr['NAS-IP-Address']
-        unique_session_id = fr['Acct-Unique-Session-Id']
+        nas_session_id = pkt.get('Acct-Session-Id')[0]
+        try:
+            nas_ip_address = pkt['NAS-IP-Address'][0]
+        except KeyError:
+            # We need NAS IP or we cannot COA/POD
+            return
+
+        unique_session_id = pkt['Acct-Unique-Session-Id'][0]
 
         ctx_values = ['activate-coa',
                       'deactivate-coa']
 
         attributes = get_attributes(crsr, user, ctx_values[ctx])
         if not attributes:
-            # SEND POD
+            # IF NO CONTEXT ATTRIBUTES SEND POD
             pod(nas_ip_address, secret,
                 user['username'], nas_session_id)
         else:
@@ -237,11 +239,11 @@ def applyctx(crsr, user, ctx, fr, secret, status):
 
 
 @retry()
-def usage(db, fr, user, input_octets=0, output_octets=0, status="start"):
+def usage(db, pkt, client, nas, nas_id, unique_id, user,
+          input_octets=0, output_octets=0, status="start"):
     # Return Values
     # 0 All good.
     # 1 Deactivate Subscriber
-    unique_session_id = fr['Acct-Unique-Session-Id']
     user_id = user['id']
     nas_secret = user['nas_secret']
 
@@ -261,15 +263,14 @@ def usage(db, fr, user, input_octets=0, output_octets=0, status="start"):
                      ' WHERE acctuniqueid = %s' +
                      ' LIMIT 1' +
                      ' FOR UPDATE',
-                     (unique_session_id,))
+                     (unique_id,))
         session = crsr.fetchone()
         session_ctx = session['ctx']
-
         if user['package_span'] and user['package_span'] > 0:
             if (utc(user['package_expire']) and
                     utc_datetime > utc(user['package_expire'])):
                 if session_ctx != 1:
-                    applyctx(crsr, user, 1, fr, nas_secret, status)
+                    applyctx(crsr, user, 1, pkt, nas_secret, status)
                 crsr.commit()
                 return 1
 
@@ -308,7 +309,7 @@ def usage(db, fr, user, input_octets=0, output_octets=0, status="start"):
                                      (new_expire, user['id'],))
                         pkg_volume_used = 0
                         if session_ctx != 0:
-                            applyctx(crsr, user, 0, fr, nas_secret, status)
+                            applyctx(crsr, user, 0, pkt, nas_secret, status)
                         crsr.commit()
                         return 0
                     else:
@@ -342,7 +343,7 @@ def usage(db, fr, user, input_octets=0, output_octets=0, status="start"):
                                  " WHERE id = %s",
                                  (combined, user_id,))
                     if session_ctx != 0:
-                        applyctx(crsr, user, 0, fr, nas_secret, status)
+                        applyctx(crsr, user, 0, pkt, nas_secret, status)
                     crsr.commit()
                     return 0
 
@@ -383,7 +384,8 @@ def usage(db, fr, user, input_octets=0, output_octets=0, status="start"):
                                          " WHERE id = %s",
                                          (user_id,))
                             if session_ctx != 0:
-                                applyctx(crsr, user, 0, fr, nas_secret, status)
+                                applyctx(crsr, user, 0, pkt,
+                                         nas_secret, status)
                             crsr.commit()
                             return 0
                         else:
@@ -409,7 +411,8 @@ def usage(db, fr, user, input_octets=0, output_octets=0, status="start"):
                                          " WHERE id = %s",
                                          (combined, user_id,))
                             if session_ctx != 0:
-                                applyctx(crsr, user, 0, fr, nas_secret, status)
+                                applyctx(crsr, user, 0, pkt,
+                                         nas_secret, status)
                             crsr.commit()
                             return 0
                         else:
@@ -428,23 +431,32 @@ def usage(db, fr, user, input_octets=0, output_octets=0, status="start"):
                                          (topup['id'],))
 
                 if session_ctx != 1:
-                    applyctx(crsr, user, 1, fr, nas_secret, status)
+                    applyctx(crsr, user, 1, pkt, nas_secret, status)
                 crsr.commit()
                 return 1
             else:
                 if session_ctx != 0:
-                    applyctx(crsr, user, 0, fr, nas_secret, status)
+                    applyctx(crsr, user, 0, pkt, nas_secret, status)
                 crsr.commit()
                 return 0
         if session_ctx != 1:
-            applyctx(crsr, user, 1, fr, nas_secret, status)
+            applyctx(crsr, user, 1, pkt, nas_secret, status)
         crsr.commit()
         return 1
 
 
 def acct(msg):
-    fr = parse_fr(msg.get('fr', ()))
-    status = fr.get('Acct-Status-Type', 'start').lower()
+    pkt = decode_packet(msg.get('attributes'))
+    try:
+        nas_session_id = pkt.get('Acct-Session-Id', [None])[0]
+        unique_session_id = pkt.get('Acct-Unique-Session-Id')[0]
+        status = pkt.get('Acct-Status-Type', [''])[0].lower()
+        username = pkt.get('User-Name', [None])[0]
+        client = pkt.get('Client-IP-Address')[0]
+        nas = pkt.get('NAS-IP-Address', ['0.0.0.0'])[0]
+    except IndexError:
+        return True
+
     dt = utc(parse_datetime(msg.get('datetime', None)))
     diff = (now()-dt).total_seconds()
 
@@ -452,29 +464,39 @@ def acct(msg):
         log.error('Processing radius accounting message older' +
                   ' than 60 seconds. Age(%s)' % diff)
 
-    if not require_attributes('accounting', fr, ['User-Name',
-                                                 'NAS-IP-Address',
-                                                 'Acct-Status-Type',
-                                                 'Acct-Session-Id',
-                                                 'Acct-Unique-Session-Id',
-                                                 'Acct-Input-Octets64',
-                                                 'Acct-Output-Octets64']):
-        return False
-
     with db() as conn:
         with dbw() as connw:
-            user = get_user(conn,
-                            fr['NAS-IP-Address'],
-                            fr['User-Name'])
-            if not user:
-                log.debug("user '%s' not found"
-                          % (fr['User-Name'],))
-                return False
+            with conn.cursor() as crsr:
+                user = get_user(crsr,
+                                client,
+                                nas,
+                                username)
+                crsr.commit()
+                if not user:
+                    log.debug("user '%s' not found"
+                              % username)
+                    return False
 
-            input_octets, output_octets = do_acct(connw, fr, dt, user, status)
-            usage(connw, fr, user, input_octets, output_octets, status)
+                input_octets, output_octets = do_acct(connw,
+                                                      pkt,
+                                                      client,
+                                                      nas,
+                                                      nas_session_id,
+                                                      unique_session_id,
+                                                      dt,
+                                                      user,
+                                                      status)
+                usage(connw,
+                      pkt,
+                      client,
+                      nas,
+                      nas_session_id,
+                      unique_session_id,
+                      user,
+                      input_octets,
+                      output_octets,
+                      status)
 
-            if not user['static_ip4'] and user['pool_id']:
-                update_ip(connw, user, fr)
-
+                if not user['static_ip4'] and user['pool_id']:
+                    update_ip(connw, status, user, pkt)
     return True

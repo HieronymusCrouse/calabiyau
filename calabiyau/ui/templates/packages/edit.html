@@ -8,6 +8,7 @@
     <thead>
         <tr>
             <th id='attribute'>Attribute</th>
+            <th id='tag'>Tag</th>
             <th id='value'>Value</th>
             <th id='ctx'>Context</th>
             <th id='nas_type'>Vendor</th>
@@ -17,11 +18,19 @@
     </thead>
 </table>
  <form class="row" autocomplete="off" data-msg="Succesfully added AVP" data-table action="{{APP}}/infrastructure/subscriber/package/add_attr/{{id}}" enctype="multipart/form-data" class="row">
-	 <div class="col-sm-3">
+	 <div class="col-sm-2">
 		 <select name="attribute" class="form-control" data-endpoint="subscriber" data-url="/v1/radius/avps">
 		</select>
 	 </div>
-	 <div class="col-sm-3">
+	 <div class="col-sm-2">
+		 <select name="tag" class="form-control">
+             <option value="">None</option>
+             {% for i in range(255) %}
+                 <option value="{{i}}">{{i}}</option>
+             {% endfor %}
+         </select>
+	 </div>
+	 <div class="col-sm-2">
 		<input class="form-control" type="text" name="value" placeholder="Value">
 	 </div>
 	 <div class="col-sm-2">
