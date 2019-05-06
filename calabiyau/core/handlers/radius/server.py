@@ -174,15 +174,16 @@ class Server(BaseHost):
         pkt['Acct-Unique-Session-Id'] = session_id
         if 'Acct-Input-Gigawords' in pkt:
             pkt['Acct-Input-Octets64'] = (pkt['Acct-Input-Gigawords'][0] << 32
-                                          + pkt['Acct-Input-Octets'][0])
+                                          + pkt.get('Acct-Input-Octets', 0)[0])
         else:
-            pkt['Acct-Input-Octets64'] = pkt['Acct-Input-Octets'][0]
+            pkt['Acct-Input-Octets64'] = pkt.get('Acct-Input-Octets', 0)[0]
 
         if 'Acct-Output-Gigawords' in pkt:
-            pkt['Acct-Output-Octets64'] = (pkt['Acct-Output-Gigawords'][0] << 32
-                                           + pkt['Acct-Output-Octets'][0])
+            pkt['Acct-Output-Octets64'] = (pkt.get(
+                'Acct-Output-Gigawords', 0)[0] << 32
+                + pkt.get('Acct-Output-Octets', 0)[0])
         else:
-            pkt['Acct-Output-Octets64'] = pkt['Acct-Output-Octets'][0]
+            pkt['Acct-Output-Octets64'] = pkt.get('Acct-Output-Octets', 0)[0]
 
         if pkt.code == 4 and self.acct(pkt, debug):
             return (const.RAD_ACCOUNTINGRESPONSE, None)
