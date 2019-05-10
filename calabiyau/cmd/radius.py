@@ -39,6 +39,7 @@ from luxon import db, dbw
 from luxon import MBClient
 from luxon.utils.daemon import GracefulKiller
 from luxon.utils.encoding import if_unicode_to_bytes
+from luxon.utils.timezone import utc
 
 from calabiyau.core.helpers.radius import (get_user,
                                            get_attributes,
@@ -65,7 +66,7 @@ def usage(crsr, user):
     utc_datetime = datetime.utcnow()
     if user['package_span'] and user['package_span'] > 0:
         if (user['package_expire'] and
-                utc_datetime > user['package_expire']):
+                utc(utc_datetime) > utc(user['package_expire'])):
             return 1
 
     if user:
@@ -77,7 +78,7 @@ def usage(crsr, user):
             # CHECK PACKAGE DATA #
             ######################
             package_volume_bytes = user['volume_gb'] * 1024 * 1024 * 1024
-            if user['volume_expire'] < utc_datetime:
+            if utc(user['volume_expire']) < utc(utc_datetime):
                 if user['volume_repeat']:
                     return 0
                 else:
@@ -108,7 +109,7 @@ def usage(crsr, user):
                 else:
                     topup_volume_bytes = 0
 
-                if topup['volume_expire'] < utc_datetime:
+                if utc(topup['volume_expire']) < utc(utc_datetime):
                     if topup['volume_repeat']:
                         log.auth('Topup renew (%s, %s Gb, %s)' %
                                  (user['username'],
