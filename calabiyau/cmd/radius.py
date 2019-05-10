@@ -52,6 +52,7 @@ from calabiyau.core.handlers.radius.server import Server
 from calabiyau.constants import RAD_ACCESSACCEPT
 from calabiyau.core.utils.radius import (validate_chap_password,
                                          duplicate)
+from calabiyau.lib.ctx import ctx as ctx_values
 
 log = GetLogger(__name__)
 
@@ -182,7 +183,7 @@ class RadiusServer(Server):
                              % user['username'])
                     return
 
-                ctx = usage(crsr, user)
+                ctx = ctx_values[usage(crsr, user)]
                 attributes = get_attributes(crsr, user, ctx)
 
                 if (user['static_ip4'] or
