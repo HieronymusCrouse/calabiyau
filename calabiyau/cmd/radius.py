@@ -165,14 +165,20 @@ class RadiusServer(Server):
                                 'utf-8')).hexdigest()
                         if str(hashed) != user['password']:
                             dbro.commit()
+                            log.info('Password mismatch (%s)'
+                                        % user['username'])
                             return
                 elif ('CHAP-Password' in pkt and
                         not validate_chap_password(pkt, user['password'])):
                     dbro.commit()
+                    log.info('Password mismatch (%s)'
+                             % user['username'])
                     return
                 elif ('User-Password' not in pkt and
                         'CHAP-Password' not in pkt):
                     dbro.commit()
+                    log.info('No password supplied (%s)'
+                             % user['username'])
                     return
 
                 ctx = usage(crsr, user)
