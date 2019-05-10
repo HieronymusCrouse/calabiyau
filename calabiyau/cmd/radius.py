@@ -51,9 +51,87 @@ from calabiyau.core.handlers.radius.server import Server
 from calabiyau.constants import RAD_ACCESSACCEPT
 from calabiyau.core.utils.radius import (validate_chap_password,
                                          duplicate)
-from calabiyau.lib.ctx import ctx as ctx_values
 
 log = GetLogger(__name__)
+
+
+def usage(crsr, user):
+    # Return Values
+    # 0 All good.
+    # 1 Deactivate Subscriber
+
+    user_id = user['id']
+
+    utc_datetime = datetime.utcnow()
+    if user['package_span'] and user['package_span'] > 0:
+        if (user['package_expire'] and
+                utc_datetime > user['package_expire']):
+            return 1
+
+    if user:
+        # IF DATA PLAN NOT UNCAPPED
+        if user['plan'] == 'data':
+            volume_used = user['volume_used']
+            volume_used_bytes = user['volume_used_bytes']
+            ######################
+            # CHECK PACKAGE DATA #
+            ######################
+            package_volume_bytes = user['volume_gb'] * 1024 * 1024 * 1024
+            if user['volume_expire'] < utc_datetime:
+                if user['volume_repeat']:
+                    return 0
+                else:
+                    log.info('Package data expired (%s)'
+                             % user['username'])
+
+            if (not volume_used and
+                    volume_used_bytes > package_volume_bytes):
+                log.info('Package data depleted (%s)'
+                         % user['username'])
+            elif (not volume_used and
+                    volume_used_bytes <= package_volume_bytes):
+                return 0
+
+            ####################
+            # CHECK TOPUP DATA #
+            ####################
+            crsr.execute('SELECT * FROM calabiyau_topup' +
+                         ' WHERE user_id = %s' +
+                         ' ORDER BY creation_time asc' +
+                         ' FOR UPDATE',
+                         (user_id,))
+            topups = crsr.fetchall()
+            for topup in topups:
+                if topup['volume_gb']:
+                    topup_volume_bytes = (topup['volume_gb'] * 1024 *
+                                          1024 * 1024)
+                else:
+                    topup_volume_bytes = 0
+
+                if topup['volume_expire'] < utc_datetime:
+                    if topup['volume_repeat']:
+                        log.auth('Topup renew (%s, %s Gb, %s)' %
+                                 (user['username'],
+                                  topup['volume_gb'],
+                                  topup['creation_time'],))
+                        db.commit()
+                        return 0
+                    else:
+                        log.auth('Topup expired (%s, %s Gb, %s)' %
+                                 (user['username'],
+                                  topup['volume_gb'],
+                                  topup['creation_time'],))
+                else:
+                    if volume_used_bytes < topup_volume_bytes:
+                        return 0
+                    else:
+                        log.auth('Topup depleted (%s, %s Gb, %s)' %
+                                 (user['username'],
+                                  topup['volume_gb'],
+                                  topup['creation_time'],))
+            return 1
+        else:
+            return 0
 
 
 class RadiusServer(Server):
@@ -97,7 +175,7 @@ class RadiusServer(Server):
                     dbro.commit()
                     return
 
-                ctx = ctx_values[user['ctx']]
+                ctx = usage(crsr, user)
                 attributes = get_attributes(crsr, user, ctx)
 
                 if (user['static_ip4'] or
@@ -178,6 +256,8 @@ clients_hash = b''
 
 def update_clients(srv):
     global clients_hash
+
+    MPLogger(__name__)
 
     # add clients (address, secret, name)
     with db() as conn:
