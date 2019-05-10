@@ -65,7 +65,7 @@ def coa(nas, secret, username, session, attributes):
     req['User-Name'] = username
     req['NAS-IP-Address'] = nas
     for attr in attributes:
-        req[attr] = attributes[attr]
+        req[attr] = attributes[attr][0]
 
     try:
         reply = srv.send_packet(req)

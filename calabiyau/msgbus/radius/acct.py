@@ -37,8 +37,7 @@ from luxon.utils.timezone import (calc_next_expire,
                                   now)
 from calabiyau.core.helpers.radius import (decode_packet,
                                            get_user,
-                                           get_attributes,
-                                           update_ip)
+                                           get_attributes)
 from calabiyau.utils.radius import pod, coa
 
 log = GetLogger(__name__)
@@ -265,6 +264,9 @@ def usage(db, pkt, client, nas, nas_id, unique_id, user,
                      ' FOR UPDATE',
                      (unique_id,))
         session = crsr.fetchone()
+        if not session:
+            return
+
         session_ctx = session['ctx']
         if user['package_span'] and user['package_span'] > 0:
             if (utc(user['package_expire']) and
@@ -446,7 +448,14 @@ def usage(db, pkt, client, nas, nas_id, unique_id, user,
 
 
 def acct(msg):
-    pkt = decode_packet(msg.get('attributes'))
+    try:
+        pkt = msg['attributes']
+    except KeyError:
+        return
+    try:
+        pkt = decode_packet(pkt)
+    except Exception:
+        return
     try:
         nas_session_id = pkt.get('Acct-Session-Id', [None])[0]
         unique_session_id = pkt.get('Acct-Unique-Session-Id')[0]
