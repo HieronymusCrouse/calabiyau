@@ -30,16 +30,18 @@
 from datetime import datetime
 from hashlib import md5
 from time import sleep
+from multiprocessing import (cpu_count,
+                             current_process)
 
 from luxon import g
 from luxon import register
 from luxon import GetLogger
-from luxon import MPLogger
 from luxon import db, dbw
 from luxon import MBClient
-from luxon.utils.daemon import GracefulKiller
-from luxon.utils.encoding import if_unicode_to_bytes
 from luxon.utils.timezone import utc
+from luxon.utils.multiproc import ProcessManager
+from luxon.utils.multithread import ThreadManager
+from luxon.utils.encoding import if_unicode_to_bytes
 
 from calabiyau.core.helpers.radius import (get_user,
                                            get_attributes,
@@ -139,7 +141,7 @@ def usage(crsr, user):
 class RadiusServer(Server):
     __slots__ = ()
 
-    def auth(self, pkt, debug):
+    def auth(self, pkt, queue, debug):
         with db() as dbro:
             with dbro.cursor() as crsr:
                 client = pkt.get('NAS-IP-Address')[0]
@@ -168,7 +170,7 @@ class RadiusServer(Server):
                         if str(hashed) != user['password']:
                             dbro.commit()
                             log.info('Password mismatch (%s)'
-                                        % user['username'])
+                                     % user['username'])
                             return
                 elif ('CHAP-Password' in pkt and
                         not validate_chap_password(pkt, user['password'])):
@@ -212,7 +214,57 @@ class RadiusServer(Server):
         return (RAD_ACCESSACCEPT,
                 attributes)
 
-    def acct(self, pkt, debug):
+    def acct(self, pkt, queue, debug):
+        try:
+            queue.put(pkt, timeout=2)
+        except Exception:
+            log.critical('Dropping Accounting Packet' +
+                         ' (Queue timeout busy/full)')
+            return False
+        return True
+
+    def coa(self, pkt, queue, debug):
+        return False
+
+    def pod(self, pkt, queue, debug):
+        return False
+
+    def status(self, pkt, queue, debug):
+        return True
+
+
+clients_hash = b''
+
+
+def conf_manager(srv):
+    global clients_hash
+
+    # add clients (address, secret, name)
+    while True:
+        with db() as conn:
+            with conn.cursor() as crsr:
+                clients = crsr.execute('SELECT INET6_NTOA(server) as server' +
+                                       ', secret FROM' +
+                                       ' calabiyau_nas').fetchall()
+                string = str(clients).encode('utf-8')
+                new_hash = md5(string).digest()
+                if new_hash != clients_hash:
+                    if clients:
+                        for client in clients:
+                            host = client['server']
+                            secret = if_unicode_to_bytes(client['secret'])
+                            srv.add_host(host,
+                                         secret)
+                    else:
+                        srv.set_hosts({})
+                    clients_hash = new_hash
+                crsr.commit()
+        sleep(10)
+
+
+def post_processing(queue):
+    while True:
+        pkt = queue.get(queue)
         with MBClient('subscriber') as mb:
             mb.send('radius_accounting',
                     {'attributes': encode_packet(pkt),
@@ -247,74 +299,37 @@ class RadiusServer(Server):
                                 duplicate_to = duplicate_to.strip()
                                 duplicate(pkt.raw_packet, duplicate_to, 1813)
 
-        return True
 
-    def coa(self, pkt, debug):
-        return False
+def post_process(queue):
+    proc_name = current_process().name
+    tm = ThreadManager()
+    for post_thread in range(cpu_count() * 2):
+        tm.new(post_processing,
+               '%s-%s' % (proc_name, post_thread+1,),
+               restart=True,
+               args=(queue,))
 
-    def pod(self, pkt, debug):
-        return False
-
-    def status(self, pkt, debug):
-        return True
-
-
-clients_hash = b''
-
-
-def update_clients(srv):
-    global clients_hash
-
-    MPLogger(__name__)
-
-    # add clients (address, secret, name)
-    with db() as conn:
-        with conn.cursor() as crsr:
-            clients = crsr.execute('SELECT INET6_NTOA(server) as server' +
-                                   ', secret FROM' +
-                                   ' calabiyau_nas').fetchall()
-            string = str(clients).encode('utf-8')
-            new_hash = md5(string).digest()
-            if new_hash != clients_hash:
-                if clients:
-                    for client in clients:
-                        host = client['server']
-                        secret = if_unicode_to_bytes(client['secret'])
-                        srv.add_host(host,
-                                     secret)
-                else:
-                    srv.set_hosts({})
-                clients_hash = new_hash
-            crsr.commit()
+    tm.start()
 
 
 @register.resource('service', 'radius')
 def start(req, resp):
     try:
-        procs = []
-        mplog = MPLogger('__main__')
-        mplog.receive()
-
+        pm = ProcessManager()
         # create server and read dictionary
-        srv = RadiusServer(debug=g.app.debug)
+        srv = RadiusServer(debug=g.app.debug, process_manager=pm)
 
-        def end(sig):
-            for proc, target in procs:
-                proc.terminate()
-            srv.stop()
-            mplog.close()
-            exit()
+        # Update Process
+        pm.new(conf_manager, 'ConfManager', args=(srv,))
+        for post_proc in range(cpu_count()):
+            pm.new(post_process,
+                   'Post-Process-%s' % post_proc,
+                   args=(srv.queue,))
 
         # start server
         srv.start()
 
-        sig = GracefulKiller(end)
-
-        while not sig.killed:
-            update_clients(srv)
-            sleep(10)
-
-        end(None)
+        pm.start()
 
     except (KeyboardInterrupt, SystemExit):
-        end(None)
+        pass

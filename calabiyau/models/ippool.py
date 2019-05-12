@@ -39,7 +39,7 @@ from calabiyau.models.pool import calabiyau_pool
 class calabiyau_ippool(SQLModel):
     id = SQLModel.Uuid(default=uuid4, internal=True)
     pool_id = SQLModel.Uuid(null=False)
-    user_id = SQLModel.Uuid(null=False, default='')
+    user_id = SQLModel.Uuid(null=True)
     framedipaddress = SQLModel.Ip4(null=False)
     expiry_time = SQLModel.DateTime(null=True, default=None)
     primary_key = id

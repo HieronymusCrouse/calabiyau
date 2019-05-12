@@ -33,12 +33,12 @@ from multiprocessing import Process, cpu_count
 
 from luxon import register
 from luxon import MBServer
-from luxon import MPLogger
 from luxon import GetLogger
 from luxon import db, dbw
 from luxon.utils.mysql import retry
 from luxon.utils.daemon import GracefulKiller
 from luxon.exceptions import SQLIntegrityError
+from luxon.utils.multiproc import ProcessManager
 
 from calabiyau.msgbus.radius.acct import acct as radius_acct
 from calabiyau.helpers.nas import get_nas_secret
@@ -51,7 +51,6 @@ log = GetLogger(__name__)
 
 @retry()
 def purge_sessions():
-    log = MPLogger(__name__)
     with dbw() as conn:
         with conn.cursor() as crsr:
             while True:
@@ -65,7 +64,6 @@ def purge_sessions():
 
 @retry()
 def append_pool(msg):
-    log = MPLogger(__name__)
     pool_id = msg['pool_id'].replace(' ', '')
     prefix = msg['prefix']
     with dbw() as conn:
@@ -98,8 +96,6 @@ def append_pool(msg):
 
 @retry()
 def delete_pool(msg):
-    MPLogger(__name__)
-
     pool_id = msg['pool_id']
     prefix = msg['prefix']
     with dbw() as conn:
@@ -116,7 +112,6 @@ def delete_pool(msg):
 
 
 def clear_nas_sessions(msg):
-    MPLogger(__name__)
     nas_id = msg['nas_id']
     with db() as conn:
         result = conn.execute('SELECT' +
@@ -162,7 +157,6 @@ def clear_nas_sessions(msg):
 
 
 def disconnect_session(msg):
-    MPLogger(__name__)
     session_id = msg['session_id']
     with db() as conn:
         result = conn.execute('SELECT' +
@@ -198,7 +192,6 @@ def disconnect_session(msg):
 
 
 def disconnect_user(msg):
-    MPLogger(__name__)
     user_id = msg['user_id']
     username = msg['username']
     with db() as conn:
@@ -239,9 +232,7 @@ def disconnect_user(msg):
 @register.resource('service', '/manager')
 def manager(req, resp):
     try:
-        procs = []
-        mplog = MPLogger('__main__')
-        mplog.receive()
+        pm = ProcessManager()
 
         mb = MBServer('subscriber',
                       {'radius_accounting': radius_acct,
@@ -251,43 +242,12 @@ def manager(req, resp):
                        'disconnect_user': disconnect_user,
                        'clear_nas_sessions': clear_nas_sessions},
                       cpu_count() * 4,
-                      16)
+                      16,
+                      process_manager=pm)
         mb.start()
 
-        # Additional processes
-        procs.append((Process(target=purge_sessions,
-                              name="session purger"),
-                      purge_sessions,))
+        pm.new(purge_sessions, name="Session Purger", restart=True)
 
-        for proc, target in procs:
-            proc.start()
-
-        def end(sig):
-            for proc, target in procs:
-                proc.terminate()
-            mb.stop()
-            mplog.close()
-            exit()
-
-        sig = GracefulKiller(end)
-
-        while True:
-            if not sig.killed:
-                mb.check()
-                for process in procs:
-                    proc, target = process
-                    if not proc.is_alive():
-                        proc.join()
-                        procs.remove(process)
-                        new = Process(target=target,
-                                      name=proc.name,)
-                        log.critical('Restarting process %s' % proc.name)
-                        procs.append((new, target,))
-                        new.start()
-                time.sleep(10)
-
-        if not sig.killed:
-            end(None)
-
+        pm.start()
     except (KeyboardInterrupt, SystemExit):
-        end(None)
+        pass

@@ -132,17 +132,15 @@ def get_pool_name(crsr, user):
     return None
 
 
+@retry(retry=3, delay=1, rand_delay=False)
 def get_ip(db, user):
     with db.cursor() as crsr:
         crsr.execute('SELECT' +
                      ' id' +
                      ', INET6_NTOA(framedipaddress) as framedipaddress' +
-                     ' FROM calabiyau_ippool' +
+                     ' FROM calabiyau_ippool USE INDEX (ippool_expire_index)' +
                      ' WHERE pool_id = %s' +
                      ' AND (expiry_time < NOW() OR expiry_time IS NULL)' +
-                     ' ORDER BY' +
-                     ' (user_id <> %s),' +
-                     ' expiry_time' +
                      ' LIMIT 1' +
                      ' FOR UPDATE',
                      (user['pool_id'], user['id'], ))
@@ -151,7 +149,7 @@ def get_ip(db, user):
             crsr.execute('UPDATE calabiyau_ippool SET' +
                          ' user_id = %s,' +
                          ' expiry_time = NOW() +' +
-                         ' INTERVAL 86400 SECOND' +
+                         ' INTERVAL 1800 SECOND' +
                          ' WHERE id = %s',
                          (user['id'], ip['id'],))
             db.commit()
@@ -161,29 +159,31 @@ def get_ip(db, user):
         return None
 
 
-@retry()
+@retry(retry=20)
 def update_ip(db, status, user, pkt):
     with db.cursor() as crsr:
         if 'Framed-IP-Address' not in pkt:
             return None
-        crsr.execute('SELECT id FROM calabiyau_ippool' +
-                     ' WHERE pool_id = %s AND' +
-                     ' framedipaddress = INET6_ATON(%s)' +
-                     ' FOR UPDATE',
-                     (user['pool_id'], pkt['Framed-IP-Address'][0],))
-
         if (status == 'interim-update' or
                 status == 'start'):
-            crsr.execute('UPDATE calabiyau_ippool SET' +
+            crsr.execute('UPDATE calabiyau_ippool' +
+                         ' USE INDEX (ippool_expire_index)' +
+                         ' SET' +
                          ' expiry_time = NOW() +' +
-                         ' INTERVAL 86400 SECOND' +
+                         ' INTERVAL 18000 SECOND' +
+                         ',user_id = %s' +
                          ' WHERE pool_id = %s AND' +
                          ' framedipaddress = INET6_ATON(%s) AND' +
                          ' expiry_time is not NULL',
-                         (user['pool_id'], pkt['Framed-IP-Address'][0],))
+                         (user['id'],
+                          user['pool_id'],
+                          pkt['Framed-IP-Address'][0],))
         elif status == 'stop':
-            crsr.execute('UPDATE calabiyau_ippool SET' +
+            crsr.execute('UPDATE calabiyau_ippool' +
+                         ' USE INDEX (ippool_expire_index)' +
+                         ' SET' +
                          ' expiry_time = NULL' +
+                         ',user_id = NULL' +
                          ' WHERE pool_id = %s AND' +
                          ' framedipaddress = INET6_ATON(%s)',
                          (user['pool_id'], pkt['Framed-IP-Address'][0],))
