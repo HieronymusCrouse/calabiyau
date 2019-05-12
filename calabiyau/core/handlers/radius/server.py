@@ -29,17 +29,16 @@
 # THE POSSIBILITY OF SUCH DAMAGE.
 import binascii
 import traceback
-import threading
 from time import time
 from hashlib import md5
-from multiprocessing import (Process,
-                             Queue,
+from multiprocessing import (Queue,
                              current_process,
                              cpu_count)
 
 from luxon import GetLogger
-from luxon.core.logger import MPLogger
 from luxon.exceptions import SQLError
+from luxon.utils.multiproc import ProcessManager
+from luxon.utils.multithread import ThreadManager
 
 from calabiyau import constants as const
 from calabiyau.core.radius.basehost import BaseHost
@@ -57,14 +56,14 @@ MAXPACKETSIZE = 4096
 
 class Server(BaseHost):
     __slots__ = ('_hosts', '_addresses', '_auth', '_acct', '_coa',
-                 '_processes', '_procs', '_threads', '_auth_port',
-                 '_acct_port', '_coa_port', '_debug', '_rpc_proc_queues',
-                 '_running', '_subproc')
+                 '_procs', '_threads', '_auth_port', '_acct_port',
+                 '_coa_port', '_debug', '_rpc_proc_queues',
+                 '_running', '_subproc', '_pm', '_pmi', '_queue')
 
     def __init__(self, addresses=['0.0.0.0'], auth_port=1812, acct_port=1813,
                  coa_port=3799, auth_enabled=True, acct_enabled=True,
                  coa_enabled=True, threads=8, procs=cpu_count() * 4,
-                 debug=False):
+                 debug=False, process_manager=None, queue_size=65536):
 
         self._debug = debug
 
@@ -85,26 +84,41 @@ class Server(BaseHost):
             if coa_enabled:
                 self._coa += bind_udp_radius(addr, coa_port)
 
-        self._processes = []
         self._procs = procs
         self._threads = threads
         self._rpc_proc_queues = []
         self._running = False
         self._subproc = False
+        if process_manager:
+            self._pm = process_manager
+            self._pmi = False
+        else:
+            self._pm = ProcessManager()
+            self._pmi = True
 
-    def auth(self, pkt, debug):
+        self.instantiate(debug)
+        self._queue = Queue(maxsize=queue_size)
+
+    @property
+    def queue(self):
+        return self._queue
+
+    def instantiate(self, debug):
+        pass
+
+    def auth(self, pkt, queue, debug):
         return False
 
-    def acct(self, pkt, debug):
+    def acct(self, pkt, queue, debug):
         return False
 
-    def coa(self, pkt, debug):
+    def coa(self, pkt, queue, debug):
         return False
 
-    def pod(self, pkt, debug):
+    def pod(self, pkt, queue, debug):
         return False
 
-    def status(self, pkt, debug):
+    def status(self, pkt, queue, debug):
         return True
 
     def create_reply_packet(self, pkt, code, attributes={}):
@@ -112,7 +126,7 @@ class Server(BaseHost):
         reply.source = pkt.source
         return reply
 
-    def _handle_auth(self, pkt, debug):
+    def _handle_auth(self, pkt, queue, debug):
         if pkt.code not in (1, 12,):
             raise ServerPacketError('Received non-authentication packet' +
                                     ' on authentication port')
@@ -126,8 +140,8 @@ class Server(BaseHost):
             pkt['NAS-IP-Address'] = pkt.source[0]
         if pkt.code == 1:
             pkt['Client-IP-Address'] = pkt.source[0]
-            result = self.auth(pkt, debug)
-        elif self.status(pkt, debug):
+            result = self.auth(pkt, queue, debug)
+        elif self.status(pkt, queue, debug):
             return (const.RAD_ACCESSACCEPT, None)
         else:
             return
@@ -144,7 +158,7 @@ class Server(BaseHost):
 
         return (code, attributes)
 
-    def _handle_acct(self, pkt, debug):
+    def _handle_acct(self, pkt, queue, debug):
         if pkt.code not in (4, 12,):
             raise ServerPacketError('Received non-accounting packet' +
                                     ' on accounting port')
@@ -185,14 +199,14 @@ class Server(BaseHost):
         else:
             pkt['Acct-Output-Octets64'] = pkt.get('Acct-Output-Octets', 0)[0]
 
-        if pkt.code == 4 and self.acct(pkt, debug):
+        if pkt.code == 4 and self.acct(pkt, queue, debug):
             return (const.RAD_ACCOUNTINGRESPONSE, None)
-        elif pkt.code == 12 and self.status(pkt, debug):
+        elif pkt.code == 12 and self.status(pkt, queue, debug):
             return (const.RAD_ACCOUNTINGRESPONSE, None)
         else:
             return
 
-    def _handle_coa(self, pkt, debug):
+    def _handle_coa(self, pkt, queue, debug):
         if pkt.code not in (40, 43,):
             raise ServerPacketError('Received non-coa/pod packet' +
                                     ' on coa port')
@@ -205,20 +219,19 @@ class Server(BaseHost):
                                     ' (Shared secret is incorrect)')
 
         if pkt.code == 43:
-            if self.coa(pkt, debug):
+            if self.coa(pkt, queue, debug):
                 return (const.RAD_COAACK, None)
             else:
                 return (const.RAD_COANACK, None)
         elif pkt.code == const.RAD_DISCONNECTREQUEST:
-            if self.pod(pkt, debug):
+            if self.pod(pkt, queue, debug):
                 return (const.RAD_DISCONNECTACK, None)
             else:
                 return (const.RAD_DISCONNECTNAK, None)
         else:
             raise ServerPacketError('Received non-coa packet on coa port')
 
-    def _thread(self, fd, pktgen, handle):
-        log = MPLogger(__name__)
+    def _thread(self, fd, pktgen, handle, queue):
         _debug = self._debug
 
         while True:
@@ -238,7 +251,7 @@ class Server(BaseHost):
                         except Exception:
                             debug += (" %s = ?\n" % attr)
                 try:
-                    result = handle(pkt, _debug)
+                    result = handle(pkt, queue, _debug)
                     try:
                         code, attributes = result
                     except TypeError:
@@ -279,7 +292,6 @@ class Server(BaseHost):
             queue.put((method, args, kwargs))
 
     def _rpc(self, queue):
-        log = MPLogger(__name__)
         while True:
             try:
                 method, args, kwargs = queue.get()
@@ -290,32 +302,25 @@ class Server(BaseHost):
                              ' processing rpc: ' + str(err) +
                              '\n' + str(traceback.format_exc()))
 
-    def _process(self, fd, pktgen, handle, rpc_proc_queue):
-        try:
-            self._subproc = True
-            MPLogger(__name__)
-            proc_name = current_process().name
-            threads = []
+    def _process(self, fd, pktgen, handle, rpc_proc_queue, queue):
+        self._subproc = True
+        proc_name = current_process().name
+        tm = ThreadManager()
 
-            threads.append(threading.Thread(
-                target=self._rpc,
-                name='%s-RPC' % proc_name,
-                args=(rpc_proc_queue,)))
-            for thread in range(self._threads):
-                threads.append(threading.Thread(
-                    target=self._thread,
-                    name='%s-%s' % (proc_name,
-                                    thread+1,),
-                    args=(fd, pktgen, handle,)))
+        tm.new(self._rpc,
+               '%s-RPC' % proc_name,
+               restart=True,
+               args=(rpc_proc_queue,))
 
-            for thread in threads:
-                thread.start()
+        for thread in range(self._threads):
+            tm.new(self._thread,
+                   '%s-%s' % (proc_name, thread+1,),
+                   kwargs={'fd': fd,
+                           'pktgen': pktgen,
+                           'handle': handle,
+                           'queue': queue})
 
-            for thread in threads:
-                thread.join()
-
-        except (KeyboardInterrupt, SystemExit):
-            pass
+        tm.start()
 
     def add_host(self, host, secret, name=None, auth_port=1812,
                  acct_port=1813, coa_port=3799):
@@ -405,16 +410,13 @@ class Server(BaseHost):
                     pktgen = self.coa_packet
                     handle = self._handle_coa
 
-                self._processes.append(Process(target=self._process,
-                                               name=name,
-                                               args=(fd,
-                                                     pktgen,
-                                                     handle,
-                                                     rpc_proc_queue)))
-        for proc in self._processes:
-            proc.start()
-
-    def stop(self):
-        self._running = False
-        for proc in self._processes:
-            proc.terminate()
+                self._pm.new(self._process,
+                             name,
+                             restart=True,
+                             kwargs={'fd': fd,
+                                     'pktgen': pktgen,
+                                     'handle': handle,
+                                     'rpc_proc_queue': rpc_proc_queue,
+                                     'queue': self._queue})
+        if self._pmi:
+            self._pm.start()
