@@ -63,13 +63,14 @@ def usage(crsr, user):
     # Return Values
     # 0 All good.
     # 1 Deactivate Subscriber
-
     user_id = user['id']
 
     utc_datetime = datetime.utcnow()
     if user['package_span'] and user['package_span'] > 0:
         if (user['package_expire'] and
                 utc(utc_datetime) > utc(user['package_expire'])):
+            log.warning('Package expired (%s)'
+                        % user['username'])
             return 1
 
     if user:
@@ -85,13 +86,13 @@ def usage(crsr, user):
                 if user['volume_repeat']:
                     return 0
                 else:
-                    log.info('Package data expired (%s)'
-                             % user['username'])
+                    log.warning('Package data expired (%s)'
+                                % user['username'])
 
             if (not volume_used and
                     volume_used_bytes > package_volume_bytes):
-                log.info('Package data depleted (%s)'
-                         % user['username'])
+                log.warning('Package data depleted (%s)'
+                            % user['username'])
             elif (not volume_used and
                     volume_used_bytes <= package_volume_bytes):
                 return 0
@@ -114,25 +115,28 @@ def usage(crsr, user):
 
                 if utc(topup['volume_expire']) < utc(utc_datetime):
                     if topup['volume_repeat']:
-                        log.auth('Topup renew (%s, %s Gb, %s)' %
-                                 (user['username'],
-                                  topup['volume_gb'],
-                                  topup['creation_time'],))
+                        log.warning('Topup renew (%s, %s, %s Gb, %s)' %
+                                    (user['username'],
+                                     topup['id'],
+                                     topup['volume_gb'],
+                                     topup['creation_time'],))
                         db.commit()
                         return 0
                     else:
-                        log.auth('Topup expired (%s, %s Gb, %s)' %
-                                 (user['username'],
-                                  topup['volume_gb'],
-                                  topup['creation_time'],))
+                        log.warning('Topup expired (%s, %s, %s Gb, %s)' %
+                                    (user['username'],
+                                     topup['id'],
+                                     topup['volume_gb'],
+                                     topup['creation_time'],))
                 else:
                     if volume_used_bytes < topup_volume_bytes:
                         return 0
                     else:
-                        log.auth('Topup depleted (%s, %s Gb, %s)' %
-                                 (user['username'],
-                                  topup['volume_gb'],
-                                  topup['creation_time'],))
+                        log.warning('Topup depleted (%s, %s, %s Gb, %s)' %
+                                    (user['username'],
+                                     topup['id'],
+                                     topup['volume_gb'],
+                                     topup['creation_time'],))
             return 1
         else:
             return 0
@@ -151,8 +155,8 @@ class RadiusServer(Server):
                                 pkt.get('User-Name')[0])
                 if user:
                     if not user['enabled']:
-                        log.auth('Subscriber account disabled (%s)'
-                                 % user['username'])
+                        log.warning('Subscriber account disabled (%s)'
+                                    % user['username'])
                         dbro.commit()
                         return
                 else:
@@ -169,24 +173,26 @@ class RadiusServer(Server):
                                 'utf-8')).hexdigest()
                         if str(hashed) != user['password']:
                             dbro.commit()
-                            log.info('Password mismatch (%s)'
-                                     % user['username'])
+                            log.waring('Password mismatch (%s)'
+                                       % user['username'])
                             return
                 elif ('CHAP-Password' in pkt and
                         not validate_chap_password(pkt, user['password'])):
                     dbro.commit()
-                    log.info('Password mismatch (%s)'
-                             % user['username'])
+                    log.warning('Password mismatch (%s)'
+                                % user['username'])
                     return
                 elif ('User-Password' not in pkt and
                         'CHAP-Password' not in pkt):
                     dbro.commit()
-                    log.info('No password supplied (%s)'
-                             % user['username'])
+                    log.warning('No password supplied (%s)'
+                                % user['username'])
                     return
 
                 ctx = ctx_values[usage(crsr, user)]
                 attributes = get_attributes(crsr, user, ctx)
+                if ctx == 'deactivate-login' and not attributes:
+                    return
 
                 if (user['static_ip4'] or
                         not user['simultaneous']):
