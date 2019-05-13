@@ -167,7 +167,7 @@ def update_ip(db, status, user, pkt):
         if (status == 'interim-update' or
                 status == 'start'):
             crsr.execute('UPDATE calabiyau_ippool' +
-                         ' USE INDEX (ippool_expire_index)' +
+                         ' USE INDEX (ippool_unique_ip)' +
                          ' SET' +
                          ' expiry_time = NOW() +' +
                          ' INTERVAL 18000 SECOND' +
@@ -180,7 +180,7 @@ def update_ip(db, status, user, pkt):
                           pkt['Framed-IP-Address'][0],))
         elif status == 'stop':
             crsr.execute('UPDATE calabiyau_ippool' +
-                         ' USE INDEX (ippool_expire_index)' +
+                         ' USE INDEX (ippool_unique_ip)' +
                          ' SET' +
                          ' expiry_time = NULL' +
                          ',user_id = NULL' +
