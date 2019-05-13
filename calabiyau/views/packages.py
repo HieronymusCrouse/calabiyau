@@ -45,21 +45,21 @@ dictionary = dictionary()
 class Packages(object):
     def __init__(self):
         router.add('GET', '/v1/package/{id}', self.package,
-                   tag='services')
+                   tag='login')
         router.add('GET', '/v1/packages', self.packages,
-                   tag='services')
+                   tag='login')
         router.add('POST', '/v1/package', self.create,
                    tag='services')
         router.add(['PUT', 'PATCH'], '/v1/package/{id}', self.update,
-                   tag='services')
+                   tag='subscriber:admin')
         router.add('DELETE', '/v1/package/{id}', self.delete,
-                   tag='services')
+                   tag='subscriber:admin')
         router.add('GET', '/v1/package/{id}/attrs', self.attrs,
-                   tag='services')
+                   tag='subscriber:view')
         router.add('POST', '/v1/package/{id}/attrs', self.add_attr,
-                   tag='services')
+                   tag='subscriber:admin')
         router.add('DELETE', '/v1/package/{id}/attrs', self.rm_attr,
-                   tag='services')
+                   tag='subscriber:admin')
 
     def package(self, req, resp, id):
         return obj(req, calabiyau_package, sql_id=id)

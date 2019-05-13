@@ -34,7 +34,7 @@ from luxon import render_template
 
 g.nav_menu.add('/Infrastructure/Subscriber/Sessions',
                href='/infrastructure/subscriber/sessions',
-               tag='services:view',
+               tag='subscriber:view',
                feather='users',
                endpoint='subscriber')
 
@@ -45,12 +45,12 @@ class Sessions():
         router.add('GET',
                    '/infrastructure/subscriber/sessions',
                    self.list,
-                   tag='services:view')
+                   tag='subscriber:view')
 
         router.add('GET',
                    '/infrastructure/subscriber/disconnect/{session_id}',
                    self.disconnect,
-                   tag='services:admin')
+                   tag='subscriber:view')
 
     def list(self, req, resp):
         return render_template('calabiyau.ui/sessions/list.html',

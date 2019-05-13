@@ -48,21 +48,21 @@ class Pool(object):
     def __init__(self):
         # Normal Tachyonic uers.
         router.add('GET', '/v1/pool/{pool_id}', self.pool,
-                   tag='services')
+                   tag='subscriber:view')
         router.add('GET', '/v1/pool', self.pools,
-                   tag='services')
+                   tag='subscriber:view')
         router.add('POST', '/v1/pool', self.create,
-                   tag='services')
+                   tag='subscriber:admin')
         router.add(['PUT', 'PATCH'], '/v1/pool/{pool_id}', self.update,
-                   tag='services')
+                   tag='subscriber:admin')
         router.add('DELETE', '/v1/pool/{pool_id}', self.delete,
-                   tag='services')
+                   tag='subscriber:admin')
         router.add('GET', '/v1/pool/{pool_id}/ips', self.ips,
-                   tag='services')
+                   tag='subscriber:view')
         router.add('POST', '/v1/pool/{pool_id}/add_prefix', self.add_prefix,
-                   tag='services')
+                   tag='subscriber:admin')
         router.add('DELETE', '/v1/pool/{pool_id}/rm_prefix', self.rm_prefix,
-                   tag='services')
+                   tag='subscriber:admin')
 
     def pool(self, req, resp, pool_id):
         return obj(req, calabiyau_pool, sql_id=pool_id,

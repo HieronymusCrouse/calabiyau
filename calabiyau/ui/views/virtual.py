@@ -38,7 +38,7 @@ from calabiyau.lib.vendor import vendors
 
 g.nav_menu.add('/Infrastructure/Subscriber/Virtual',
                href='/infrastructure/subscriber/virtual',
-               tag='infrastructure:admin',
+               tag='subscriber:view',
                feather='at-sign',
                endpoint='subscriber')
 
@@ -49,42 +49,42 @@ class Virtual():
         router.add('GET',
                    '/infrastructure/subscriber/virtual',
                    self.list,
-                   tag='infrastructure:admin')
+                   tag='subscriber:view')
 
         router.add('GET',
                    '/infrastructure/subscriber/virtual/{id}',
                    self.view,
-                   tag='infrastructure:admin')
+                   tag='subscriber:view')
 
         router.add('GET',
                    '/infrastructure/subscriber/virtual/delete/{id}',
                    self.delete,
-                   tag='infrastructure:admin')
+                   tag='subscriber:admin')
 
         router.add(('GET', 'POST',),
                    '/infrastructure/subscriber/virtual/add',
                    self.add,
-                   tag='infrastructure:admin')
+                   tag='subscriber:admin')
 
         router.add(('GET', 'POST',),
                    '/infrastructure/subscriber/virtual/edit/{id}',
                    self.edit,
-                   tag='infrastructure:admin')
+                   tag='subscriber:admin')
 
         router.add('POST',
                    '/infrastructure/subscriber/virtual/add_nas/{id}',
                    self.add_nas,
-                   tag='infrastructure:admin')
+                   tag='subscriber:admin')
 
         router.add('GET',
                    '/infrastructure/subscriber/virtual/rm_nas/{id}',
                    self.rm_nas,
-                   tag='infrastructure:admin')
+                   tag='subscriber:admin')
 
         router.add('GET',
                    '/infrastructure/subscriber/virtual/clear/{id}',
                    self.clear,
-                   tag='infrastructure:admin')
+                   tag='subscriber:admin')
 
     def list(self, req, resp):
         return render_template('calabiyau.ui/virtual/list.html',
