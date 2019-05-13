@@ -40,7 +40,7 @@ from calabiyau.ui.models.packages import package
 
 g.nav_menu.add('/Infrastructure/Subscriber/Packages',
                href='/infrastructure/subscriber/packages',
-               tag='services',
+               tag='subscriber:view',
                feather='package',
                endpoint='subscriber')
 
@@ -51,37 +51,37 @@ class Packages():
         router.add('GET',
                    '/infrastructure/subscriber/packages',
                    self.list,
-                   tag='services')
+                   tag='subscriber:view')
 
         router.add('GET',
                    '/infrastructure/subscriber/package/{id}',
                    self.view,
-                   tag='services')
+                   tag='subscriber:view')
 
         router.add('GET',
                    '/infrastructure/subscriber/package/delete/{id}',
                    self.delete,
-                   tag='services')
+                   tag='subscriber:admin')
 
         router.add(('GET', 'POST',),
                    '/infrastructure/subscriber/package/add',
                    self.add,
-                   tag='services')
+                   tag='subscriber:admin')
 
         router.add(('GET', 'POST',),
                    '/infrastructure/subscriber/package/edit/{id}',
                    self.edit,
-                   tag='services')
+                   tag='subscriber:admin')
 
         router.add('POST',
                    '/infrastructure/subscriber/package/add_attr/{id}',
                    self.add_attr,
-                   tag='services')
+                   tag='subscriber:admin')
 
         router.add('GET',
                    '/infrastructure/subscriber/package/rm_attr/{id}',
                    self.rm_attr,
-                   tag='services')
+                   tag='subscriber:admin')
 
     def list(self, req, resp):
         return render_template('calabiyau.ui/packages/list.html',
