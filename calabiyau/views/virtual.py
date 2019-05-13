@@ -45,22 +45,22 @@ class Virtual(object):
     def __init__(self):
         # Normal Tachyonic uers.
         router.add('GET', '/v1/virtual/{id}', self.virtual,
-                   tag='infrastructure:admin')
+                   tag='subscriber:view')
         router.add('GET', '/v1/virtual', self.virtuals,
-                   tag='infrastructure:admin')
+                   tag='subscriber:view')
         router.add('POST', '/v1/virtual', self.create,
-                   tag='infrastructure:admin')
+                   tag='subscriber:admin')
         router.add(['PUT', 'PATCH'], '/v1/virtual/{id}', self.update,
-                   tag='infrastructure:admin')
+                   tag='subscriber:admin')
         router.add('DELETE', '/v1/virtual/{id}', self.delete,
-                   tag='infrastructure:admin')
+                   tag='subscriber:admin')
 
         router.add('GET', '/v1/virtual/{id}/nas', self.nas,
-                   tag='infrastructure:admin')
+                   tag='subscriber:view')
         router.add('POST', '/v1/virtual/{id}/nas', self.add_nas,
-                   tag='infrastructure:admin')
+                   tag='subscriber:admin')
         router.add('DELETE', '/v1/virtual/{id}/nas', self.rm_nas,
-                   tag='infrastructure:admin')
+                   tag='subscriber:admin')
 
     def virtual(self, req, resp, id):
         return obj(req, calabiyau_virtual, sql_id=id,

@@ -37,7 +37,7 @@ from calabiyau.ui.models.pool import pool
 
 g.nav_menu.add('/Infrastructure/Subscriber/IP Pool',
                href='/infrastructure/subscriber/pool',
-               tag='services:view',
+               tag='subscriber:admin',
                feather='list',
                endpoint='subscriber')
 
@@ -48,32 +48,32 @@ class Pool():
         router.add('GET',
                    '/infrastructure/subscriber/pool',
                    self.list,
-                   tag='services')
+                   tag='subscriber:view')
 
         router.add('GET',
                    '/infrastructure/subscriber/pool/{id}',
                    self.view,
-                   tag='services')
+                   tag='subscriber:view')
 
         router.add('GET',
                    '/infrastructure/subscriber/pool/delete/{id}',
                    self.delete,
-                   tag='services')
+                   tag='subscriber:admin')
 
         router.add(('GET', 'POST',),
                    '/infrastructure/subscriber/pool/add',
                    self.add,
-                   tag='services')
+                   tag='subscriber:admin')
 
         router.add(('GET', 'POST',),
                    '/infrastructure/subscriber/pool/edit/{id}',
                    self.edit,
-                   tag='services')
+                   tag='subscriber:admin')
 
         router.add('POST',
                    '/infrastructure/subscriber/pool/request/{id}',
                    self.request,
-                   tag='services')
+                   tag='subscriber:admin')
 
     def list(self, req, resp):
         return render_template('calabiyau.ui/pool/list.html',
