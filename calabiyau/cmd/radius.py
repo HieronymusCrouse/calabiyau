@@ -173,7 +173,7 @@ class RadiusServer(Server):
                                 'utf-8')).hexdigest()
                         if str(hashed) != user['password']:
                             dbro.commit()
-                            log.waring('Password mismatch (%s)'
+                            log.warning('Password mismatch (%s)'
                                        % user['username'])
                             return
                 elif ('CHAP-Password' in pkt and
