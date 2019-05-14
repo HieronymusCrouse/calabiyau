@@ -187,17 +187,18 @@ class Server(BaseHost):
         pkt['Acct-Session-Start-Time'] = int(time())
         pkt['Acct-Unique-Session-Id'] = session_id
         if 'Acct-Input-Gigawords' in pkt:
-            pkt['Acct-Input-Octets64'] = (pkt['Acct-Input-Gigawords'][0] << 32
-                                          + pkt.get('Acct-Input-Octets', 0)[0])
+            pkt['Acct-Input-Octets64'] = (
+            (pkt['Acct-Input-Gigawords'][0] << 32) +
+            pkt.get('Acct-Input-Octets', [0])[0])
         else:
-            pkt['Acct-Input-Octets64'] = pkt.get('Acct-Input-Octets', 0)[0]
+            pkt['Acct-Input-Octets64'] = pkt.get('Acct-Input-Octets', [0])[0]
 
         if 'Acct-Output-Gigawords' in pkt:
-            pkt['Acct-Output-Octets64'] = (pkt.get(
-                'Acct-Output-Gigawords', 0)[0] << 32
-                + pkt.get('Acct-Output-Octets', 0)[0])
+            pkt['Acct-Output-Octets64'] = ((pkt.get(
+               'Acct-Output-Gigawords', [0])[0] << 32)
+                + pkt.get('Acct-Output-Octets', [0])[0])
         else:
-            pkt['Acct-Output-Octets64'] = pkt.get('Acct-Output-Octets', 0)[0]
+            pkt['Acct-Output-Octets64'] = pkt.get('Acct-Output-Octets', [0])[0]
 
         if pkt.code == 4 and self.acct(pkt, queue, debug):
             return (const.RAD_ACCOUNTINGRESPONSE, None)
