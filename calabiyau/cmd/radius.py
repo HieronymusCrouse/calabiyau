@@ -174,7 +174,7 @@ class RadiusServer(Server):
                         if str(hashed) != user['password']:
                             dbro.commit()
                             log.warning('Password mismatch (%s)'
-                                       % user['username'])
+                                        % user['username'])
                             return
                 elif ('CHAP-Password' in pkt and
                         not validate_chap_password(pkt, user['password'])):
