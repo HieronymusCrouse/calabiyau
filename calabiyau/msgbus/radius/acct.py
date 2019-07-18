@@ -316,12 +316,11 @@ def usage(db, pkt, client, nas, nas_id, unique_id, user,
                         return 0
                     else:
                         crsr.execute("UPDATE calabiyau_subscriber" +
-                                     " SET volume_expire = %s," +
-                                     " volume_used_bytes = 0," +
+                                     " SET volume_used_bytes = 0," +
                                      " volume_used = 1," +
                                      " ctx = 1" +
                                      " WHERE id = %s",
-                                     (new_expire, user['id'],))
+                                     (user['id'],))
                         pkg_volume_used = 1
                         log.info('Package data expired (%s)'
                                  % user['username'])
