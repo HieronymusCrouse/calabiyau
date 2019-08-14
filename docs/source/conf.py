@@ -6,7 +6,7 @@ import sys
 sys.path.insert(0, os.path.abspath('..'))
 sys.path.insert(0, os.path.abspath('../..'))
 
-from tradius import metadata
+from calabiyau import metadata
 
 extensions = [
     'sphinx.ext.autodoc',
@@ -18,7 +18,7 @@ extensions = [
 # General information about the project.
 project = metadata.description
 copyright = metadata.copyright
-author = metadata.authors_string
+author = metadata.author
 
 version = metadata.version
 release = version
