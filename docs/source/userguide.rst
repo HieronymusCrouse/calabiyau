@@ -19,14 +19,14 @@ Adding a Virtual RADIUS service is the first step in setting up the system. To a
 ``Infrastructure -> Subscriber -> Virtual``, and click on the ``New`` Button. Simply enter a name, and click the
 ``Save`` button
 
-.. image:: /_static/img/add_virtual.png
+.. image:: _static/img/add_virtual.png
 
 Adding a NAS
 ------------
 To add and assign NAS'es to this virtual server, click in the ``Edit`` button, enter the name, IP, type and Secret, and
 click on the ``Add NAS`` button.
 
-.. image:: /_static/img/add_nas.png
+.. image:: _static/img/add_nas.png
 
 When specifying the :ref:`attributes <attributes>` to be returned for a specific :ref:`package <packages>`, only the AVPs
 matching this type will be returned for this NAS.
@@ -64,12 +64,12 @@ Creating an IP Pool
 To create a new pool, navigate to ``Infrastructure -> Subscriber -> IP Pool`` and click on the ``New`` button. Enter
 a name and click on the ``Save`` button.
 
-.. image:: /_static/img/add_pool.png
+.. image:: _static/img/add_pool.png
 
 To add the range, click on the ``Edit`` button, enter the cidr, and make sure the selection box is set to
 "Add/Append Prefix" before clicking on the ``Request`` button.
 
-.. image:: /_static/img/edit_pool.png
+.. image:: _static/img/edit_pool.png
 
 The request to create all the IP addresses in the pool is processed offline, and its duration of course
 depends on the size of the prefix. Multiple ranges may be added to a single pool by repeating this process.
@@ -90,7 +90,7 @@ Creating a Package
 ------------------
 To create a new package, navigate to ``Infrastructure -> Subscriber -> Packages`` and click on the ``New`` button.
 
-.. image:: /_static/img/add_package.png
+.. image:: _static/img/add_package.png
 
 The following information is configurable:
 
@@ -125,7 +125,7 @@ To assign the RADIUS attributes to be returned for a specific package, follow th
 :ref:`modify_package` to reach the "Edit Package" view. At the bottom of the window a table
 displays the currently assigned attributes.
 
-.. image:: /_static/img/attributes.png
+.. image:: _static/img/attributes.png
 
 To add a return attribute, complete the fields in this order:
 
@@ -157,7 +157,7 @@ Creating a subscriber account
 -----------------------------
 To create a new subscriber account, navigate to ``Services -> Subscribers`` and click on the ``New`` button.
 
-.. image:: /_static/img/add_subscriber.png
+.. image:: _static/img/add_subscriber.png
 
 Enter the following information:
 
@@ -186,7 +186,7 @@ on the icon next to the appropriate subscriber, four tabs are displayed:
 * Daily: Daily upload and download usage in GigaBytes.
 * Monthly: Monthly upload and download usage in GigaBytes.
 
-.. image:: /_static/img/usage.png
+.. image:: _static/img/usage.png
 
 To display only Upload or Download usage, click on the appropriate box above the graph.
 
